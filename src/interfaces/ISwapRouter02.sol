@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.25;
 
 // contracts/interfaces/IApproveAndCall.sol
