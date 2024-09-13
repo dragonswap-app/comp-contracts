@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.25;
 
-import "./interfaces/ICompetition.sol";
-import "./interfaces/IWSEI.sol";
+import {ISwapRouter02} from "./interfaces/ISwapRouter.sol";
+import {ICompetition} from "./interfaces/ICompetition.sol";
+import {IWSEI} from "./interfaces/IWSEI.sol";
 
-import "@openzeppelin/contracts@5.0.2/access/Ownable.sol";
-import "@openzeppelin/contracts@5.0.2/token/ERC20/utils/SafeERC20.sol";
+import {Utils} from "./libraries/Utils.sol";
+
+import {Ownable} from "@openzeppelin/contracts@5.0.2/access/Ownable.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils/SafeERC20.sol";
 
 contract Competition is ICompetition, Ownable {
     using SafeERC20 for IERC20;
@@ -14,30 +17,37 @@ contract Competition is ICompetition, Ownable {
     mapping(address addr => uint256 id) public swapTokenIds;
     address[] public swapTokens;
 
-    address public immutable mainToken;
-    bool public immutable acceptSei;
+    address payable public immutable mainToken;
+    ISwapRouter02 public immutable router;
+    bool public immutable acceptNative;
 
-    constructor(address _mainToken) Ownable(msg.sender) {
-        _checkToken(_mainToken);
-        // WSEI check
-        if (_mainToken == 0xE30feDd158A2e3b13e9badaeABaFc5516e95e8C7) acceptSei = true;
+    constructor(address _router, address payable _mainToken, address[] memory _swapTokens) Ownable(msg.sender) {
+        Utils._isContract(_router);
+        Utils._isContract(_mainToken);
+        router = ISwapRouter02(_router);
         mainToken = _mainToken;
+        // WSEI check
+        if (_mainToken == 0xE30feDd158A2e3b13e9badaeABaFc5516e95e8C7) acceptNative = true;
+
         // "firstslotplaceholder" in hex
         swapTokens.push(0x6669727374736C6f74706C616365686f6c646572);
+
+        // Add swap tokens
+        addSwapTokens(_swapTokens);
     }
 
-    function addSwapTokens(address[] calldata _swapTokens) external onlyOwner {
+    function addSwapTokens(address[] memory _swapTokens) public onlyOwner {
         // Gas opt
         uint256 _length = _swapTokens.length;
         uint256 length = swapTokens.length;
         for (uint256 i; i < _length; ++i) {
             address _token = _swapTokens[i];
-            _checkToken(_token);
-            if (_token == mainToken) revert();
-            if (isSwapToken(_token)) revert();
-            swapTokenIds[_token] = length++;
-            swapTokens.push(_token);
-            //emit event
+            Utils._isContract(_token);
+            if (_token != mainToken && !isSwapToken(_token)) {
+                swapTokenIds[_token] = length++;
+                swapTokens.push(_token);
+                emit SwapTokenAdded(_token);
+            }
         }
     }
 
@@ -49,63 +59,47 @@ contract Competition is ICompetition, Ownable {
             address _token = _swapTokens[i];
             if (isSwapToken(_token)) {
                 uint256 id = swapTokenIds[_token];
-                address lastToken = swapTokens[length--];
+                address lastToken = swapTokens[--length];
                 swapTokens[id] = lastToken;
                 swapTokenIds[lastToken] = id;
                 swapTokens.pop();
                 delete swapTokenIds[_token];
-                // emit event
+                emit SwapTokenRemoved(_token);
             }
         }
     }
 
     function deposit() public payable {
-        if (acceptSei) payable(mainToken).transfer(msg.value);
-        else revert();
-        _updateAccount(msg.value);
+        if (acceptNative) payable(mainToken).transfer(msg.value);
+        else revert CannotDepositNative();
+        _noteDeposit(msg.value);
     }
 
     function deposit(uint256 amount) external {
         IERC20(mainToken).safeTransferFrom(msg.sender, address(this), amount);
-        _updateAccount(amount);
+        _noteDeposit(amount);
     }
 
-    function swap(uint256 _tokenIn, uint256 _tokenOut, uint24 fee) external {
-        _validateRoute(_tokenIn, _tokenOut);
-        if (fee == 0) {
-            // v2 swap
+    function withdraw(uint256 amount, bool unwrapIfNative) external {
+        if (accounts[msg.sender].base < amount) revert InsufficientBalance();
+        if (unwrapIfNative && acceptNative) {
+            IWSEI(mainToken).withdraw(amount);
+            payable(msg.sender).transfer(amount);
         } else {
-            // v3 swap with pool of specified fee
+            IERC20(mainToken).safeTransfer(msg.sender, amount);
         }
+
+        accounts[msg.sender].base -= amount;
+        emit NewWithdrawal(msg.sender, amount);
     }
 
-    function withdraw(uint256 amount, bool SEI) external {
-        //either
-        // IWSEI(_mainToken).withdraw(amount)
-        // deduct from balance
-        // send sei: payable(msg.sender).send(amount);
-        // or
-        // deduct from balance
-        // IERC20(_mainToken).safeTransfer(msg.sender, amount);
-    }
-
-    function _updateAccount(uint256 amount) private {
+    function _noteDeposit(uint256 amount) private {
         accounts[msg.sender].base += amount;
-    }
-
-    function _checkToken(address _token) private view {
-        // solhint-disable-next-line
-        assembly {
-            // If address contains no code - revert (substitues address zero check)
-            if iszero(extcodesize(_token)) { revert(0, 0) }
-        }
+        emit NewDeposit(msg.sender, amount);
     }
 
     function _validateRoute(address _tokenIn, address _tokenOut) public view {
-        address _mainToken = mainToken;
-        if ((_tokenIn == _mainToken && isSwapToken(_tokenOut)) || (isSwapToken(_tokenIn) && _tokenOut == _mainToken)) {
-            // do not revert
-        }
+        if ((_tokenIn != mainToken || !isSwapToken(_tokenIn)) && (_tokenOut != mainToken || !isSwapToken(_tokenOut))) revert InvalidRoute();
     }
 
     function isSwapToken(address _token) public view returns (bool) {
