@@ -7,15 +7,37 @@ import {Competition} from "../src/Competition.sol";
 contract CompetitionTest is Test {
     Competition public competition;
 
-    //function setUp() public {
-    //    competition = new Competition();
-    //    competition.setNumber(0);
-    //}
+    address constant public DS_ROUTER = 0x11DA6463D6Cb5a03411Dbf5ab6f6bc3997Ac7428;
+    address constant public USDC = 0x3894085Ef7Ff0f0aeDf52E2A2704928d1Ec074F1;
+    address payable constant public WSEI = payable(0xE30feDd158A2e3b13e9badaeABaFc5516e95e8C7);
+    string constant public URL = "https://evm-rpc.sei-apis.com";
+    address[] public swapTokens;
 
-    //function test_Increment() public {
-    //    competition.increment();
-    //    assertEq(competition.number(), 1);
-    //}
+    function setUp() public {
+        vm.createSelectFork(URL);
+
+        competition = new Competition(DS_ROUTER, WSEI, swapTokens);
+    }
+
+   // function test_depositViaFunction() public {
+   //     assertEq(address(competition).balance, 0);
+   //     uint256 depositAmount = 1 ether;
+   //     competition.deposit{value: depositAmount}();
+   //     assertEq(address(competition).balance, depositAmount);
+   // }
+
+    function test_AddNewSwapToken() public {
+        assertEq(competition.isSwapToken(USDC), false);
+        swapTokens.push(USDC);
+        competition.addSwapTokens(swapTokens);
+        assertEq(competition.isSwapToken(USDC), true);
+        swapTokens.pop();
+    }
+
+    function testFail_AddNewSwapToken_EOA() public {
+        swapTokens.push(address(1));
+        competition.addSwapTokens(swapTokens);
+    }
 
     //function testFuzz_SetNumber(uint256 x) public {
     //    competition.setNumber(x);
