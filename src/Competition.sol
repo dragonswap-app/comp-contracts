@@ -99,10 +99,10 @@ contract Competition is ICompetition, Ownable, Multicall {
     function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to)
         external
         payable
-        /*returns (uint256 amountOut)*/ {
+        returns (uint256 amountOut) {
         // check balance before swap
         _validateRoute(path[0], path[path.length - 1]);
-        router.swapExactTokensForTokens(amountIn, amountOutMin, path, to);
+        return router.swapExactTokensForTokens(amountIn, amountOutMin, path, to);
         // note down balance changes
     }
 
@@ -110,10 +110,10 @@ contract Competition is ICompetition, Ownable, Multicall {
     function swapTokensForExactTokens(uint256 amountOut, uint256 amountInMax, address[] calldata path, address to)
         external
         payable
-        /*returns (uint256 amountIn)*/ {
+        returns (uint256 amountIn) {
         // check balance before swap
         _validateRoute(path[0], path[path.length - 1]);
-        router.swapTokensForExactTokens(amountIn, amountInMax, path, to);
+        return router.swapTokensForExactTokens(amountOut, amountInMax, path, to);
         // note down balance changes
     }
 
