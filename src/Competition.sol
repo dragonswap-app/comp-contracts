@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.25;
 
-import {ISwapRouter02} from "./interfaces/ISwapRouter.sol";
+import {ISwapRouter02, IV1SwapRouter} from "./interfaces/ISwapRouter02.sol";
 import {ICompetition} from "./interfaces/ICompetition.sol";
 import {IWSEI} from "./interfaces/IWSEI.sol";
 
 import {Utils} from "./libraries/Utils.sol";
 
+import {Multicall} from "./base/Multicall.sol";
+
 import {Ownable} from "@openzeppelin/contracts@5.0.2/access/Ownable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils/SafeERC20.sol";
 
-contract Competition is ICompetition, Ownable {
+contract Competition is ICompetition, Ownable, Multicall {
     using SafeERC20 for IERC20;
 
     mapping(address addr => Account acc) public accounts;
@@ -91,6 +93,28 @@ contract Competition is ICompetition, Ownable {
 
         accounts[msg.sender].base -= amount;
         emit NewWithdrawal(msg.sender, amount);
+    }
+
+    /// @inheritdoc IV1SwapRouter
+    function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to)
+        external
+        payable
+        /*returns (uint256 amountOut)*/ {
+        // check balance before swap
+        _validateRoute(path[0], path[path.length - 1]);
+        router.swapExactTokensForTokens(amountIn, amountOutMin, path, to);
+        // note down balance changes
+    }
+
+    /// @inheritdoc IV1SwapRouter
+    function swapTokensForExactTokens(uint256 amountOut, uint256 amountInMax, address[] calldata path, address to)
+        external
+        payable
+        /*returns (uint256 amountIn)*/ {
+        // check balance before swap
+        _validateRoute(path[0], path[path.length - 1]);
+        router.swapTokensForExactTokens(amountIn, amountInMax, path, to);
+        // note down balance changes
     }
 
     function _noteDeposit(uint256 amount) private {

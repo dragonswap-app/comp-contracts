@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.25;
 
-interface ICompetition {
+import {ISwapRouter02, IV1SwapRouter} from "./ISwapRouter02.sol";
+
+interface ICompetition is IV1SwapRouter {
     struct Account {
         uint256 base;
         uint256 earnings;
