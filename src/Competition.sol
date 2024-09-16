@@ -99,10 +99,14 @@ contract Competition is ICompetition, Ownable, Multicall {
     function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to)
         external
         payable
-        returns (uint256 amountOut) {
+        returns (uint256 amountOut)
+    {
         // check balance before swap
-        _validateRoute(path[0], path[path.length - 1]);
-        return router.swapExactTokensForTokens(amountIn, amountOutMin, path, to);
+        address _tokenOut = path[path.length - 1];
+        address _tokenIn = path[0];
+        _preSwap(_tokenIn, _tokenOut, amountIn);
+        uint256 _amountOut = router.swapExactTokensForTokens(amountIn, amountOutMin, path, to);
+        _postSwap(_tokenIn, _tokenOut, amountIn, _amountOut, SwapType.V1);
         // note down balance changes
     }
 
@@ -110,9 +114,10 @@ contract Competition is ICompetition, Ownable, Multicall {
     function swapTokensForExactTokens(uint256 amountOut, uint256 amountInMax, address[] calldata path, address to)
         external
         payable
-        returns (uint256 amountIn) {
+        returns (uint256 amountIn)
+    {
         // check balance before swap
-        _validateRoute(path[0], path[path.length - 1]);
+        _preSwap(path[0], path[path.length - 1], amountIn);
         return router.swapTokensForExactTokens(amountOut, amountInMax, path, to);
         // note down balance changes
     }
@@ -122,8 +127,19 @@ contract Competition is ICompetition, Ownable, Multicall {
         emit NewDeposit(msg.sender, amount);
     }
 
-    function _validateRoute(address _tokenIn, address _tokenOut) public view {
-        if ((_tokenIn != mainToken || !isSwapToken(_tokenIn)) && (_tokenOut != mainToken || !isSwapToken(_tokenOut))) revert InvalidRoute();
+    function _preSwap(address _tokenIn, address _tokenOut, uint256 _amountIn) private {
+        if ((_tokenIn != mainToken || !isSwapToken(_tokenIn)) && (_tokenOut != mainToken || !isSwapToken(_tokenOut))) {
+            revert InvalidRoute();
+        }
+        if (accounts[msg.sender].balances[_tokenIn] < _amountIn) revert InsufficientBalance();
+        accounts[msg.sender].balances[_tokenIn] -= _amountIn;
+    }
+
+    function _postSwap(address _tokenIn, address _tokenOut, uint256 _amountIn, uint256 _amountOut, SwapType _swap)
+        private
+    {
+        accounts[msg.sender].balances[_tokenOut] += _amountOut;
+        emit NewSwap(msg.sender, _tokenIn, _tokenOut, _amountIn, _amountOut, _swap);
     }
 
     function isSwapToken(address _token) public view returns (bool) {

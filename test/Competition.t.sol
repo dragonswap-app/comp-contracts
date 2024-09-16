@@ -7,10 +7,10 @@ import {Competition} from "../src/Competition.sol";
 contract CompetitionTest is Test {
     Competition public competition;
 
-    address constant public DS_ROUTER = 0x11DA6463D6Cb5a03411Dbf5ab6f6bc3997Ac7428;
-    address constant public USDC = 0x3894085Ef7Ff0f0aeDf52E2A2704928d1Ec074F1;
-    address payable constant public WSEI = payable(0xE30feDd158A2e3b13e9badaeABaFc5516e95e8C7);
-    string constant public URL = "https://evm-rpc.sei-apis.com";
+    address public constant DS_ROUTER = 0x11DA6463D6Cb5a03411Dbf5ab6f6bc3997Ac7428;
+    address public constant USDC = 0x3894085Ef7Ff0f0aeDf52E2A2704928d1Ec074F1;
+    address payable public constant WSEI = payable(0xE30feDd158A2e3b13e9badaeABaFc5516e95e8C7);
+    string public constant URL = "https://evm-rpc.sei-apis.com";
     address[] public swapTokens;
 
     function setUp() public {
@@ -19,12 +19,12 @@ contract CompetitionTest is Test {
         competition = new Competition(DS_ROUTER, WSEI, swapTokens);
     }
 
-   // function test_depositViaFunction() public {
-   //     assertEq(address(competition).balance, 0);
-   //     uint256 depositAmount = 1 ether;
-   //     competition.deposit{value: depositAmount}();
-   //     assertEq(address(competition).balance, depositAmount);
-   // }
+    // function test_depositViaFunction() public {
+    //     assertEq(address(competition).balance, 0);
+    //     uint256 depositAmount = 1 ether;
+    //     competition.deposit{value: depositAmount}();
+    //     assertEq(address(competition).balance, depositAmount);
+    // }
 
     function test_AddNewSwapToken() public {
         assertEq(competition.isSwapToken(USDC), false);
