@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.25;
 
-import '../interfaces/IMulticall.sol';
+import "../interfaces/IMulticall.sol";
 
 /// @title Multicall
 /// @notice Enables calling multiple methods in a single call to the contract
