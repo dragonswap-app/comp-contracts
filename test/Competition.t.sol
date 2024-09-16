@@ -2,6 +2,9 @@
 pragma solidity ^0.8.25;
 
 import {Test, console} from "forge-std/Test.sol";
+
+import {IWSEI} from "../src/interfaces/IWSEI.sol";
+
 import {Competition} from "../src/Competition.sol";
 
 contract CompetitionTest is Test {
@@ -19,12 +22,20 @@ contract CompetitionTest is Test {
         competition = new Competition(DS_ROUTER, WSEI, swapTokens);
     }
 
-    // function test_depositViaFunction() public {
-    //     assertEq(address(competition).balance, 0);
-    //     uint256 depositAmount = 1 ether;
-    //     competition.deposit{value: depositAmount}();
-    //     assertEq(address(competition).balance, depositAmount);
-    // }
+    function test_depositViaFunction() public {
+        assertEq(IWSEI(WSEI).balanceOf(address(competition)), 0);
+        uint256 depositAmount = 1 ether;
+        competition.deposit{value: depositAmount}();
+        assertEq(IWSEI(WSEI).balanceOf(address(competition)), depositAmount);
+    }
+
+    function test_depositDirectly() public {
+        assertEq(IWSEI(WSEI).balanceOf(address(competition)), 0);
+        uint256 depositAmount = 1 ether;
+        (bool success, ) = payable(competition).call{value: depositAmount}("");
+        assert(success);
+        assertEq(IWSEI(WSEI).balanceOf(address(competition)), depositAmount);
+    }
 
     function test_AddNewSwapToken() public {
         assertEq(competition.isSwapToken(USDC), false);

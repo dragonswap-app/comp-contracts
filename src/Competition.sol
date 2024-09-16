@@ -72,8 +72,12 @@ contract Competition is ICompetition, Ownable, Multicall {
     }
 
     function deposit() public payable {
-        if (acceptNative) payable(mainToken).transfer(msg.value);
-        else revert CannotDepositNative();
+        if (acceptNative) {
+            (bool success, ) = payable(mainToken).call{value: msg.value}("");
+            if (!success) revert TransferFailed();
+        } else {
+            revert CannotDepositNative();
+        }
         _noteDeposit(msg.value);
     }
 
@@ -96,7 +100,7 @@ contract Competition is ICompetition, Ownable, Multicall {
     }
 
     /// @inheritdoc IV1SwapRouter
-    function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to)
+    function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address /*to*/ )
         external
         payable
         returns (uint256 amountOut)
@@ -104,22 +108,25 @@ contract Competition is ICompetition, Ownable, Multicall {
         // check balance before swap
         address _tokenOut = path[path.length - 1];
         address _tokenIn = path[0];
-        _preSwap(_tokenIn, _tokenOut, amountIn);
-        uint256 _amountOut = router.swapExactTokensForTokens(amountIn, amountOutMin, path, to);
-        _postSwap(_tokenIn, _tokenOut, amountIn, _amountOut, SwapType.V1);
+        _validateSwap(_tokenIn, _tokenOut, amountIn);
+        amountOut = router.swapExactTokensForTokens(amountIn, amountOutMin, path, address(this));
         // note down balance changes
+        _noteSwap(_tokenIn, _tokenOut, amountIn, amountOut, SwapType.V1);
     }
 
     /// @inheritdoc IV1SwapRouter
-    function swapTokensForExactTokens(uint256 amountOut, uint256 amountInMax, address[] calldata path, address to)
+    function swapTokensForExactTokens(uint256 amountOut, uint256 amountInMax, address[] calldata path, address /*to*/ )
         external
         payable
         returns (uint256 amountIn)
     {
         // check balance before swap
-        _preSwap(path[0], path[path.length - 1], amountIn);
-        return router.swapTokensForExactTokens(amountOut, amountInMax, path, to);
+        address _tokenOut = path[path.length - 1];
+        address _tokenIn = path[0];
+        amountIn = router.swapTokensForExactTokens(amountOut, amountInMax, path, address(this));
+        _validateSwap(_tokenIn, _tokenOut, amountIn);
         // note down balance changes
+        _noteSwap(_tokenIn, _tokenOut, amountIn, amountOut, SwapType.V1);
     }
 
     function _noteDeposit(uint256 amount) private {
@@ -127,7 +134,7 @@ contract Competition is ICompetition, Ownable, Multicall {
         emit NewDeposit(msg.sender, amount);
     }
 
-    function _preSwap(address _tokenIn, address _tokenOut, uint256 _amountIn) private {
+    function _validateSwap(address _tokenIn, address _tokenOut, uint256 _amountIn) private {
         if ((_tokenIn != mainToken || !isSwapToken(_tokenIn)) && (_tokenOut != mainToken || !isSwapToken(_tokenOut))) {
             revert InvalidRoute();
         }
@@ -135,7 +142,7 @@ contract Competition is ICompetition, Ownable, Multicall {
         accounts[msg.sender].balances[_tokenIn] -= _amountIn;
     }
 
-    function _postSwap(address _tokenIn, address _tokenOut, uint256 _amountIn, uint256 _amountOut, SwapType _swap)
+    function _noteSwap(address _tokenIn, address _tokenOut, uint256 _amountIn, uint256 _amountOut, SwapType _swap)
         private
     {
         accounts[msg.sender].balances[_tokenOut] += _amountOut;
