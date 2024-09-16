@@ -31,4 +31,5 @@ interface ICompetition is IV1SwapRouter {
     error CannotDepositNative();
     error InsufficientBalance();
     error InvalidRoute();
+    error TransferFailed();
 }
