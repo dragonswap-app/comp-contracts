@@ -15,24 +15,32 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils
 contract Competition is ICompetition, Ownable, Multicall {
     using SafeERC20 for IERC20;
 
-    mapping(address addr => Account acc) public accounts;
+    mapping(address addr => mapping(address token => uint256 balance)) public balances;
     mapping(address addr => uint256 id) public swapTokenIds;
     address[] public swapTokens;
 
-    address payable public immutable mainToken;
+    address public immutable usdc;
+    address public immutable usdt;
+
     ISwapRouter02 public immutable router;
     bool public immutable acceptNative;
 
-    constructor(address _router, address payable _mainToken, address[] memory _swapTokens) Ownable(msg.sender) {
+    constructor(address _router, address _usdc, address _usdt, address[] memory _swapTokens) Ownable(msg.sender) {
         Utils._isContract(_router);
-        Utils._isContract(_mainToken);
+        Utils._isContract(_usdc);
+        Utils._isContract(_usdt);
+
         router = ISwapRouter02(_router);
-        mainToken = _mainToken;
-        // WSEI check
-        if (_mainToken == 0xE30feDd158A2e3b13e9badaeABaFc5516e95e8C7) acceptNative = true;
+        usdc = _usdc;
+        usdt = _usdt;
 
         // "firstslotplaceholder" in hex
         swapTokens.push(0x6669727374736C6f74706C616365686f6c646572);
+
+        swapTokens.push(_usdc);
+        swapTokenIds[_usdc] = 1;
+        swapTokens.push(_usdt);
+        swapTokenIds[_usdc] = 2;
 
         // Add swap tokens
         addSwapTokens(_swapTokens);
@@ -45,7 +53,7 @@ contract Competition is ICompetition, Ownable, Multicall {
         for (uint256 i; i < _length; ++i) {
             address _token = _swapTokens[i];
             Utils._isContract(_token);
-            if (_token != mainToken && !isSwapToken(_token)) {
+            if (!isSwapToken(_token)) {
                 swapTokenIds[_token] = length++;
                 swapTokens.push(_token);
                 emit SwapTokenAdded(_token);
@@ -59,8 +67,9 @@ contract Competition is ICompetition, Ownable, Multicall {
         uint256 length = swapTokens.length;
         for (uint256 i; i < _length; ++i) {
             address _token = _swapTokens[i];
-            if (isSwapToken(_token)) {
-                uint256 id = swapTokenIds[_token];
+            uint256 id = swapTokenIds[_token];
+            // Id is checked to be greater than 2 because we do not want to remove placeholder usdc and usdt
+            if (isSwapToken(_token) && id > 2) {
                 address lastToken = swapTokens[--length];
                 swapTokens[id] = lastToken;
                 swapTokenIds[lastToken] = id;
@@ -71,32 +80,37 @@ contract Competition is ICompetition, Ownable, Multicall {
         }
     }
 
-    function deposit() public payable {
-        if (acceptNative) {
-            (bool success, ) = payable(mainToken).call{value: msg.value}("");
-            if (!success) revert TransferFailed();
-        } else {
-            revert CannotDepositNative();
-        }
-        _noteDeposit(msg.value);
+    /**
+     * @param _usdc if true means usdc is being deposited else usdt
+     */
+    function deposit(bool _usdc, uint256 amount) external {
+        address stable = _usdc ? usdc : usdt;
+        IERC20(stable).safeTransferFrom(msg.sender, address(this), amount);
+        balances[msg.sender][stable] += amount;
+        emit NewDeposit(msg.sender, stable, amount);
     }
 
-    function deposit(uint256 amount) external {
-        IERC20(mainToken).safeTransferFrom(msg.sender, address(this), amount);
-        _noteDeposit(amount);
+    /**
+     * @dev Withdraw specified amount of one of the stables
+     * Send any number higher than or equal to user balance to withdraw the full balance
+     */
+    function withdraw(bool _usdc, uint256 amount) public {
+        address stable = _usdc ? usdc : usdt;
+        if (balances[msg.sender][stable] < amount) amount = balances[msg.sender][stable];
+        if (amount > 0) {
+            IERC20(stable).safeTransfer(msg.sender, amount);
+            balances[msg.sender][stable] -= amount;
+            emit NewWithdrawal(msg.sender, stable, amount);
+        }
     }
 
-    function withdraw(uint256 amount, bool unwrapIfNative) external {
-        if (accounts[msg.sender].base < amount) revert InsufficientBalance();
-        if (unwrapIfNative && acceptNative) {
-            IWSEI(mainToken).withdraw(amount);
-            payable(msg.sender).transfer(amount);
-        } else {
-            IERC20(mainToken).safeTransfer(msg.sender, amount);
-        }
-
-        accounts[msg.sender].base -= amount;
-        emit NewWithdrawal(msg.sender, amount);
+    /**
+     * @dev Withdraw specified amount of both of the stables
+     * Send any number higher than or equal to user balance to withdraw the full balance
+     */
+    function withdraw(uint256 amountUsdc, uint256 amountUsdt) external {
+        withdraw(true, amountUsdc);
+        withdraw(false, amountUsdt);
     }
 
     /// @inheritdoc IV1SwapRouter
@@ -129,31 +143,22 @@ contract Competition is ICompetition, Ownable, Multicall {
         _noteSwap(_tokenIn, _tokenOut, amountIn, amountOut, SwapType.V1);
     }
 
-    function _noteDeposit(uint256 amount) private {
-        accounts[msg.sender].base += amount;
-        emit NewDeposit(msg.sender, amount);
-    }
-
     function _validateSwap(address _tokenIn, address _tokenOut, uint256 _amountIn) private {
-        if ((_tokenIn != mainToken || !isSwapToken(_tokenIn)) && (_tokenOut != mainToken || !isSwapToken(_tokenOut))) {
+        if (!isSwapToken(_tokenIn) && !isSwapToken(_tokenOut)) {
             revert InvalidRoute();
         }
-        if (accounts[msg.sender].balances[_tokenIn] < _amountIn) revert InsufficientBalance();
-        accounts[msg.sender].balances[_tokenIn] -= _amountIn;
+        if (balances[msg.sender][_tokenIn] < _amountIn) revert InsufficientBalance();
+        balances[msg.sender][_tokenIn] -= _amountIn;
     }
 
     function _noteSwap(address _tokenIn, address _tokenOut, uint256 _amountIn, uint256 _amountOut, SwapType _swap)
         private
     {
-        accounts[msg.sender].balances[_tokenOut] += _amountOut;
+        balances[msg.sender][_tokenOut] += _amountOut;
         emit NewSwap(msg.sender, _tokenIn, _tokenOut, _amountIn, _amountOut, _swap);
     }
 
     function isSwapToken(address _token) public view returns (bool) {
         return swapTokenIds[_token] > 0;
-    }
-
-    receive() external payable {
-        deposit();
     }
 }
