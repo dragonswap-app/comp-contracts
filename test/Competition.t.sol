@@ -3,8 +3,6 @@ pragma solidity ^0.8.25;
 
 import {Test, console} from "forge-std/Test.sol";
 
-import {IWSEI} from "../src/interfaces/IWSEI.sol";
-
 import {Competition} from "../src/Competition.sol";
 
 contract CompetitionTest is Test {

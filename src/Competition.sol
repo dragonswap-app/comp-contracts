@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.25;
 
-import {ISwapRouter02, IV1SwapRouter, IV2SwapRouter} from "./interfaces/ISwapRouter02.sol";
+import {ISwapRouter02Minimal, IV1SwapRouter, IV2SwapRouter} from "./interfaces/ISwapRouter02Minimal.sol";
 import {ICompetition} from "./interfaces/ICompetition.sol";
-import {IWSEI} from "./interfaces/IWSEI.sol";
 
 import {Utils} from "./libraries/Utils.sol";
 
@@ -12,7 +11,7 @@ import {Multicall} from "./base/Multicall.sol";
 import {Ownable} from "@openzeppelin/contracts@5.0.2/access/Ownable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils/SafeERC20.sol";
 
-contract Competition is ICompetition, Ownable, Multicall {
+contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
     using SafeERC20 for IERC20;
 
     mapping(address addr => mapping(address token => uint256 balance)) public balances;
@@ -22,7 +21,7 @@ contract Competition is ICompetition, Ownable, Multicall {
     address public immutable usdc;
     address public immutable usdt;
 
-    ISwapRouter02 public immutable router;
+    ISwapRouter02Minimal public immutable router;
     bool public immutable acceptNative;
 
     constructor(address _router, address _usdc, address _usdt, address[] memory _swapTokens) Ownable(msg.sender) {
@@ -30,7 +29,7 @@ contract Competition is ICompetition, Ownable, Multicall {
         Utils._isContract(_usdc);
         Utils._isContract(_usdt);
 
-        router = ISwapRouter02(_router);
+        router = ISwapRouter02Minimal(_router);
         usdc = _usdc;
         usdt = _usdt;
 
