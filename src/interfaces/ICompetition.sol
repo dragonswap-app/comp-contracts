@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.25;
 
-import {ISwapRouter02, IV1SwapRouter} from "./ISwapRouter02.sol";
+import {IV1SwapRouter, IV2SwapRouter} from "./ISwapRouter02.sol";
+//import {IV2SwapRouterNoCallback} from "./IV2SwapRouterNoCallback.sol";
 
-interface ICompetition is IV1SwapRouter {
+interface ICompetition is IV1SwapRouter, IV2SwapRouter /*IV2SwapRouterNoCallback*/ {
     enum SwapType {
         V1,
         V2
