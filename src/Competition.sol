@@ -21,10 +21,27 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
     address public immutable usdc;
     address public immutable usdt;
 
+    uint256 public immutable startTimestamp;
+    uint256 public immutable endTimestamp;
+
     ISwapRouter02Minimal public immutable router;
     bool public immutable acceptNative;
 
-    constructor(address _router, address _usdc, address _usdt, address[] memory _swapTokens) Ownable(msg.sender) {
+    modifier onceOn() {
+        _isOnCheck();
+        _;
+    }
+
+    constructor(
+        uint256 _startTimestamp,
+        uint256 _endTimestamp,
+        address _router,
+        address _usdc,
+        address _usdt,
+        address[] memory _swapTokens
+    ) Ownable(msg.sender) {
+        if (_startTimestamp < block.timestamp || _endTimestamp < _startTimestamp + 1 days) revert();
+
         Utils._isContract(_router);
         Utils._isContract(_usdc);
         Utils._isContract(_usdt);
@@ -60,6 +77,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
         }
     }
 
+    // TODO: Restrict this function to the cases where removal wouldn't cause any issues
     function removeSwapTokens(address[] calldata _swapTokens) external onlyOwner {
         // If we remove some tokens we should pay attention to let users swap back from these tokens, but not to
         uint256 _length = _swapTokens.length;
@@ -83,6 +101,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
      * @param _usdc if true means usdc is being deposited else usdt
      */
     function deposit(bool _usdc, uint256 amount) external {
+        if (block.timestamp > endTimestamp) revert Ended();
         address stable = _usdc ? usdc : usdt;
         IERC20(stable).safeTransferFrom(msg.sender, address(this), amount);
         balances[msg.sender][stable] += amount;
@@ -116,6 +135,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
     function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address /*to*/ )
         external
         payable
+        onceOn
         returns (uint256 amountOut)
     {
         // check balance before swap
@@ -131,6 +151,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
     function swapTokensForExactTokens(uint256 amountOut, uint256 amountInMax, address[] calldata path, address /*to*/ )
         external
         payable
+        onceOn
         returns (uint256 amountIn)
     {
         // check balance before swap
@@ -144,7 +165,12 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut) {
+    function exactInputSingle(ExactInputSingleParams calldata params)
+        external
+        payable
+        onceOn
+        returns (uint256 amountOut)
+    {
         // check balance before swap
         address _tokenIn = params.tokenIn;
         address _tokenOut = params.tokenOut;
@@ -155,7 +181,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut) {
+    function exactInput(ExactInputParams calldata params) external payable onceOn returns (uint256 amountOut) {
         bytes memory path = params.path;
         address _tokenIn = Utils._toAddress(path, 0);
         address _tokenOut = Utils._toAddress(path, path.length - 20);
@@ -166,7 +192,12 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactOutputSingle(ExactOutputSingleParams calldata params) external payable returns (uint256 amountIn) {
+    function exactOutputSingle(ExactOutputSingleParams calldata params)
+        external
+        payable
+        onceOn
+        returns (uint256 amountIn)
+    {
         // check balance before swap
         address _tokenOut = params.tokenOut;
         address _tokenIn = params.tokenIn;
@@ -177,7 +208,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactOutput(ExactOutputParams calldata params) external payable returns (uint256 amountIn) {
+    function exactOutput(ExactOutputParams calldata params) external payable onceOn returns (uint256 amountIn) {
         // check balance before swap
         bytes memory path = params.path;
         address _tokenIn = Utils._toAddress(path, 0);
@@ -186,6 +217,10 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
         amountIn = router.exactOutput(params);
         IERC20(_tokenIn).approve(address(router), 0);
         _noteSwap(_tokenIn, _tokenOut, amountIn, params.amountOut, SwapType.V2);
+    }
+
+    function isSwapToken(address _token) public view returns (bool) {
+        return swapTokenIds[_token] > 0;
     }
 
     function _validateSwapAndApprove(address _tokenIn, address _tokenOut, uint256 _amountIn) private {
@@ -204,9 +239,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
         emit NewSwap(msg.sender, _tokenIn, _tokenOut, _amountIn, _amountOut, _swap);
     }
 
-    function isSwapToken(address _token) public view returns (bool) {
-        return swapTokenIds[_token] > 0;
+    function _isOnCheck() private view {
+        if (block.timestamp < startTimestamp) revert NotOnYet();
     }
-
-    function dragonswapV2SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {}
 }

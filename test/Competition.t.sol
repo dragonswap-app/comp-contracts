@@ -18,7 +18,7 @@ contract CompetitionTest is Test {
     function setUp() public {
         vm.createSelectFork(URL);
 
-        competition = new Competition(DS_ROUTER, USDC, USDT, swapTokens);
+        competition = new Competition(block.timestamp, block.timestamp + 1 days, DS_ROUTER, USDC, USDT, swapTokens);
     }
 
     function test_depositViaFunction() public {
