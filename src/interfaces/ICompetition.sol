@@ -21,7 +21,9 @@ interface ICompetition {
     );
 
     error CannotDepositNative();
+    error Ended();
     error InsufficientBalance();
     error InvalidRoute();
     error TransferFailed();
+    error NotOnYet();
 }
