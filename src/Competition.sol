@@ -55,6 +55,8 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         __Ownable_init(msg.sender);
 
         if (_startTimestamp < block.timestamp || _endTimestamp < _startTimestamp + 1 days) revert();
+        startTimestamp = _startTimestamp;
+        endTimestamp = _endTimestamp;
 
         Utils._isContract(_router);
         Utils._isContract(_usdc);
