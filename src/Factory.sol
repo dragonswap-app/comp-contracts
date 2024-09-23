@@ -4,12 +4,12 @@ pragma solidity 0.8.25;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ICompetition} from "./interfaces/ICompetition.sol";
 
-contract PredictionsFactory is Ownable {
+contract Factory is Ownable {
     // Type of contracts deployed by factory
     mapping(address => bool) public isDeployedThroughFactory;
     // Array of all sale deployments
     address[] public deployments;
-    // PredictionV2 contract implementation
+    // Competition contract implementation
     address public implementation;
 
     // Events
@@ -25,7 +25,7 @@ contract PredictionsFactory is Ownable {
     constructor(address _owner) Ownable(_owner) {}
 
     /**
-     * @dev Function to set new PredictionV2 implementation
+     * @dev Function to set new competition contract implementation
      */
     function setImplementation(address _implementation) external onlyOwner {
         // Require that implementation is different from current one
