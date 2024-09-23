@@ -27,6 +27,8 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
     ISwapRouter02Minimal public immutable router;
     bool public immutable acceptNative;
 
+    uint256 public constant MINIMAL_DEPOSIT;
+
     modifier onceOn() {
         _isOnCheck();
         _;
@@ -82,6 +84,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
      */
     function deposit(bool _usdc, uint256 amount) external {
         if (block.timestamp > endTimestamp) revert Ended();
+        if (amount < MINIMAL_DEPOSIT) revert InsufficientAmount();
         address stable = _usdc ? usdc : usdt;
         IERC20(stable).safeTransferFrom(msg.sender, address(this), amount);
         balances[msg.sender][stable] += amount;
