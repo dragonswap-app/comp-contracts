@@ -77,26 +77,6 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
         }
     }
 
-    // TODO: Restrict this function to the cases where removal wouldn't cause any issues
-    function removeSwapTokens(address[] calldata _swapTokens) external onlyOwner {
-        // If we remove some tokens we should pay attention to let users swap back from these tokens, but not to
-        uint256 _length = _swapTokens.length;
-        uint256 length = swapTokens.length;
-        for (uint256 i; i < _length; ++i) {
-            address _token = _swapTokens[i];
-            uint256 id = swapTokenIds[_token];
-            // Id is checked to be greater than 2 because we do not want to remove placeholder usdc and usdt
-            if (isSwapToken(_token) && id > 2) {
-                address lastToken = swapTokens[--length];
-                swapTokens[id] = lastToken;
-                swapTokenIds[lastToken] = id;
-                swapTokens.pop();
-                delete swapTokenIds[_token];
-                emit SwapTokenRemoved(_token);
-            }
-        }
-    }
-
     /**
      * @param _usdc if true means usdc is being deposited else usdt
      */
