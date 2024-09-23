@@ -10,7 +10,7 @@ interface ICompetition {
     event SwapTokenAdded(address token);
     event SwapTokenRemoved(address token);
     event NewDeposit(address indexed account, address indexed stable, uint256 amount);
-    event NewWithdrawal(address indexed account, address indexed stable, uint256 amount);
+    event Exit(address indexed account);
     event NewSwap(
         address indexed account,
         address indexed tokenIn,
@@ -20,6 +20,7 @@ interface ICompetition {
         SwapType swap
     );
 
+    error AlreadyLeft();
     error CannotDepositNative();
     error Ended();
     error InsufficientAmount();
