@@ -2,15 +2,13 @@
 pragma solidity ^0.8.25;
 
 library Utils {
+    error NotAContract();
     error ToAddressOverflow();
     error ToAddressOutOfBounds();
 
-    function _isContract(address _token) internal view {
-        // solhint-disable-next-line
-        assembly {
-            // If address contains no code - revert (substitues address zero check)
-            if iszero(extcodesize(_token)) { revert(0, 0) }
-        }
+    function _isContract(address _addr) internal view {
+        // If address contains no code - revert (substitues address zero check)
+        if (address(_addr).code.length == 0) revert NotAContract()
     }
 
     function _toAddress(bytes memory _bytes, uint256 _start) internal pure returns (address) {
