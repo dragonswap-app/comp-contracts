@@ -28,4 +28,13 @@ interface ICompetition {
     error InvalidRoute();
     error TransferFailed();
     error NotOnYet();
+
+    function initialize(
+        uint256 _startTimestamp,
+        uint256 _endTimestamp,
+        address _router,
+        address _usdc,
+        address _usdt,
+        address[] memory _swapTokens
+    ) external;
 }

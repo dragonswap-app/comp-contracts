@@ -8,10 +8,10 @@ import {Utils} from "./libraries/Utils.sol";
 
 import {Multicall} from "./base/Multicall.sol";
 
-import {Ownable} from "@openzeppelin/contracts@5.0.2/access/Ownable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable@5.0.2/access/OwnableUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils/SafeERC20.sol";
 
-contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
+contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, Multicall {
     using SafeERC20 for IERC20;
 
     mapping(address addr => mapping(address token => uint256 balance)) public balances;
@@ -40,14 +40,20 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
         _;
     }
 
-    constructor(
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         uint256 _startTimestamp,
         uint256 _endTimestamp,
         address _router,
         address _usdc,
         address _usdt,
         address[] memory _swapTokens
-    ) Ownable(msg.sender) {
+    ) external initializer {
+        __Ownable_init(msg.sender);
+
         if (_startTimestamp < block.timestamp || _endTimestamp < _startTimestamp + 1 days) revert();
 
         Utils._isContract(_router);
@@ -101,11 +107,11 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable, Multicall {
         uint256 length = swapTokens.length;
         bool madeWithdrawal;
         bool leftoverExists;
-        for (uint i; i < length; i++) {
+        for (uint256 i; i < length; i++) {
             address token = swapTokens[i];
             uint256 balance = balances[msg.sender][token];
             if (balance > 0) {
-                (bool success, ) = token.call(abi.encodeWithSelector(IERC20.transfer.selector, msg.sender, balance));
+                (bool success,) = token.call(abi.encodeWithSelector(IERC20.transfer.selector, msg.sender, balance));
                 if (success) {
                     delete balances[msg.sender][token];
                     madeWithdrawal = true;
