@@ -14,19 +14,17 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils
 contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, Multicall {
     using SafeERC20 for IERC20;
 
-    mapping(address addr => mapping(address token => uint256 balance)) public balances;
-    mapping(address addr => bool exited) public isOut;
-    mapping(address addr => uint256 id) public swapTokenIds;
+    ISwapRouter02Minimal public router;
+    address public usdc;
+    address public usdt;
+    uint256 public startTimestamp;
+    uint256 public endTimestamp;
+
     address[] public swapTokens;
 
-    address public immutable usdc;
-    address public immutable usdt;
-
-    uint256 public immutable startTimestamp;
-    uint256 public immutable endTimestamp;
-
-    ISwapRouter02Minimal public immutable router;
-    bool public immutable acceptNative;
+    mapping(address addr => bool exited) public isOut;
+    mapping(address addr => uint256 id) public swapTokenIds;
+    mapping(address addr => mapping(address token => uint256 balance)) public balances;
 
     uint256 public constant MINIMAL_DEPOSIT = 10e6;
 
