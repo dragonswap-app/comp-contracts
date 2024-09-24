@@ -72,7 +72,7 @@ contract Factory is Ownable {
         deployments.push(instance);
 
         // Initialize
-        ICompetition(instance).initialize(_startTimestamp, _endTimestamp, _router, _usdc, _usdt, _swapTokens);
+        ICompetition(instance).initialize(owner(), _startTimestamp, _endTimestamp, _router, _usdc, _usdt, _swapTokens);
 
         emit Deployed(instance, impl);
     }
