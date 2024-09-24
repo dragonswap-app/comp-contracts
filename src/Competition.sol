@@ -43,6 +43,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     }
 
     function initialize(
+        address _owner,
         uint256 _startTimestamp,
         uint256 _endTimestamp,
         address _router,
@@ -50,7 +51,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         address _usdt,
         address[] memory _swapTokens
     ) external initializer {
-        __Ownable_init(msg.sender);
+        __Ownable_init(_owner);
 
         if (_startTimestamp < block.timestamp || _endTimestamp < _startTimestamp + 1 days) revert();
         startTimestamp = _startTimestamp;
