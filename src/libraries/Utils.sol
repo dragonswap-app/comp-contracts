@@ -8,7 +8,7 @@ library Utils {
 
     function _isContract(address _addr) internal view {
         // If address contains no code - revert (substitues address zero check)
-        if (address(_addr).code.length == 0) revert NotAContract()
+        if (address(_addr).code.length == 0) revert NotAContract();
     }
 
     function _toAddress(bytes memory _bytes, uint256 _start) internal pure returns (address) {
