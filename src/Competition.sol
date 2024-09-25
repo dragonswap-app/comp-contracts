@@ -202,7 +202,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         _noteSwap(_tokenIn, _tokenOut, amountIn, params.amountOut, SwapType.V2);
     }
 
-    function addSwapTokens(address[] memory _swapTokens) public onlyOwner {
+    function addSwapTokens(address[] memory _swapTokens) external onlyOwner {
         _addSwapTokens(_swapTokens);
     }
 
