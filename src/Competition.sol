@@ -74,22 +74,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         swapTokenIds[_stable0] = 2;
 
         // Add swap tokens
-        addSwapTokens(_swapTokens);
-    }
-
-    function addSwapTokens(address[] memory _swapTokens) public onlyOwner {
-        // Gas opt
-        uint256 _length = _swapTokens.length;
-        uint256 length = swapTokens.length;
-        for (uint256 i; i < _length; ++i) {
-            address _token = _swapTokens[i];
-            Utils._isContract(_token);
-            if (!isSwapToken(_token)) {
-                swapTokenIds[_token] = length++;
-                swapTokens.push(_token);
-                emit SwapTokenAdded(_token);
-            }
-        }
+        _addSwapTokens(_swapTokens);
     }
 
     /**
@@ -217,8 +202,27 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         _noteSwap(_tokenIn, _tokenOut, amountIn, params.amountOut, SwapType.V2);
     }
 
+    function addSwapTokens(address[] memory _swapTokens) public onlyOwner {
+        _addSwapTokens(_swapTokens);
+    }
+
     function isSwapToken(address _token) public view returns (bool) {
         return swapTokenIds[_token] > 0;
+    }
+
+    function _addSwapTokens(address[] memory _swapTokens) private {
+        // Gas opt
+        uint256 _length = _swapTokens.length;
+        uint256 length = swapTokens.length;
+        for (uint256 i; i < _length; ++i) {
+            address _token = _swapTokens[i];
+            Utils._isContract(_token);
+            if (!isSwapToken(_token)) {
+                swapTokenIds[_token] = length++;
+                swapTokens.push(_token);
+                emit SwapTokenAdded(_token);
+            }
+        }
     }
 
     /**
@@ -248,7 +252,6 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         // Emit event.
         emit NewSwap(msg.sender, _tokenIn, _tokenOut, _amountIn, _amountOut, _swap);
     }
-
 
     /**
      * @dev Ensure that the competition is in progress.
