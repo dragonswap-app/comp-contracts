@@ -30,6 +30,7 @@ interface ICompetition {
     error NotOnYet();
 
     function initialize(
+        address _owner,
         uint256 _startTimestamp,
         uint256 _endTimestamp,
         address _router,
