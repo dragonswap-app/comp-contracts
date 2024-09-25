@@ -15,8 +15,8 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     using SafeERC20 for IERC20;
 
     ISwapRouter02Minimal public router;
-    address public usdc;
-    address public usdt;
+    address public stable0;
+    address public stable1;
     uint256 public startTimestamp;
     uint256 public endTimestamp;
 
@@ -47,8 +47,8 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         uint256 _startTimestamp,
         uint256 _endTimestamp,
         address _router,
-        address _usdc,
-        address _usdt,
+        address _stable0,
+        address _stable1,
         address[] memory _swapTokens
     ) external initializer {
         __Ownable_init(_owner);
@@ -58,20 +58,20 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         endTimestamp = _endTimestamp;
 
         Utils._isContract(_router);
-        Utils._isContract(_usdc);
-        Utils._isContract(_usdt);
+        Utils._isContract(_stable0);
+        Utils._isContract(_stable1);
 
         router = ISwapRouter02Minimal(_router);
-        usdc = _usdc;
-        usdt = _usdt;
+        stable0 = _stable0;
+        stable1 = _stable1;
 
         // "firstslotplaceholder" in hex
         swapTokens.push(0x6669727374736C6f74706C616365686f6c646572);
 
-        swapTokens.push(_usdc);
-        swapTokenIds[_usdc] = 1;
-        swapTokens.push(_usdt);
-        swapTokenIds[_usdc] = 2;
+        swapTokens.push(_stable0);
+        swapTokenIds[_stable0] = 1;
+        swapTokens.push(_stable1);
+        swapTokenIds[_stable0] = 2;
 
         // Add swap tokens
         addSwapTokens(_swapTokens);
@@ -93,12 +93,12 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     }
 
     /**
-     * @param _usdc if true means usdc is being deposited else usdt
+     * @param _stable0 if true means stable0 is being deposited else stable1
      */
-    function deposit(bool _usdc, uint256 amount) external notOut {
+    function deposit(bool _stable0, uint256 amount) external notOut {
         if (block.timestamp > endTimestamp) revert Ended();
         if (amount < MINIMAL_DEPOSIT) revert InsufficientAmount();
-        address stable = _usdc ? usdc : usdt;
+        address stable = _stable0 ? stable0 : stable1;
         IERC20(stable).safeTransferFrom(msg.sender, address(this), amount);
         balances[msg.sender][stable] += amount;
         emit NewDeposit(msg.sender, stable, amount);
