@@ -83,7 +83,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         swapTokens.push(_stable0);
         swapTokenIds[_stable0] = 1;
         swapTokens.push(_stable1);
-        swapTokenIds[_stable0] = 2;
+        swapTokenIds[_stable1] = 2;
 
         // Add swap tokens
         _addSwapTokens(_swapTokens);
