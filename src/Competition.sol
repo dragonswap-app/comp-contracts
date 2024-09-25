@@ -155,13 +155,11 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountIn)
     {
-        // check balance before swap
         address _tokenIn = path[0];
         address _tokenOut = path[path.length - 1];
         _validateSwapAndApprove(_tokenIn, _tokenOut, amountInMax);
         amountIn = router.swapTokensForExactTokens(amountOut, amountInMax, path, address(this));
         IERC20(_tokenIn).approve(address(router), 0);
-        // note down balance changes
         _noteSwap(_tokenIn, _tokenOut, amountIn, amountOut, SwapType.V1);
     }
 
@@ -173,7 +171,6 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountOut)
     {
-        // check balance before swap
         address _tokenIn = params.tokenIn;
         address _tokenOut = params.tokenOut;
         uint256 _amountIn = params.amountIn;
@@ -201,7 +198,6 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountIn)
     {
-        // check balance before swap
         address _tokenOut = params.tokenOut;
         address _tokenIn = params.tokenIn;
         _validateSwapAndApprove(_tokenIn, _tokenOut, params.amountInMaximum);
@@ -212,7 +208,6 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
 
     /// @inheritdoc IV2SwapRouter
     function exactOutput(ExactOutputParams calldata params) external payable onceOn notOut returns (uint256 amountIn) {
-        // check balance before swap
         bytes memory path = params.path;
         address _tokenIn = Utils._toAddress(path, 0);
         address _tokenOut = Utils._toAddress(path, path.length - 20);
@@ -226,26 +221,45 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         return swapTokenIds[_token] > 0;
     }
 
+    /**
+     * @dev Function to validate swap parameters and prepare state for a swap.
+     */
     function _validateSwapAndApprove(address _tokenIn, address _tokenOut, uint256 _amountIn) private {
+        // Ensure that both _tokenIn and _tokenOut are swappable inside the competition.
         if (!isSwapToken(_tokenIn) && !isSwapToken(_tokenOut)) {
             revert InvalidRoute();
         }
+        // Ensure that the competition participant has sufficient amount of tokens.
         if (balances[msg.sender][_tokenIn] < _amountIn) revert InsufficientBalance();
+        // Approve specified token amount to the router.
         IERC20(_tokenIn).approve(address(router), _amountIn);
+        // Decrease _tokenIn balance.
         balances[msg.sender][_tokenIn] -= _amountIn;
     }
 
+    /**
+     * @dev Function to note down balance change after swap and emit an event with relevant information.
+     */
     function _noteSwap(address _tokenIn, address _tokenOut, uint256 _amountIn, uint256 _amountOut, SwapType _swap)
         private
     {
+        // Increase _tokenOut balance.
         balances[msg.sender][_tokenOut] += _amountOut;
+        // Emit event.
         emit NewSwap(msg.sender, _tokenIn, _tokenOut, _amountIn, _amountOut, _swap);
     }
 
+
+    /**
+     * @dev Ensure that the competition is in progress.
+     */
     function _isOnCheck() private view {
         if (block.timestamp < startTimestamp) revert NotOnYet();
     }
 
+    /**
+     * @dev Ensure that caller is not in the process of leaving the competition.
+     */
     function _isNotOutCheck() private view {
         if (isOut[msg.sender]) revert AlreadyLeft();
     }
