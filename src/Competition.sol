@@ -14,18 +14,29 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils
 contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, Multicall {
     using SafeERC20 for IERC20;
 
+    /// @inheritdoc ICompetition
     ISwapRouter02Minimal public router;
+
+    /// @inheritdoc ICompetition
     address public stable0;
+    /// @inheritdoc ICompetition
     address public stable1;
+    /// @inheritdoc ICompetition
     uint256 public startTimestamp;
+    /// @inheritdoc ICompetition
     uint256 public endTimestamp;
 
+    /// @inheritdoc ICompetition
     address[] public swapTokens;
 
-    mapping(address addr => bool exited) public isOut;
-    mapping(address addr => uint256 id) public swapTokenIds;
-    mapping(address addr => mapping(address token => uint256 balance)) public balances;
+    /// @inheritdoc ICompetition
+    mapping(address account => bool exited) public isOut;
+    /// @inheritdoc ICompetition
+    mapping(address swapToken => uint256 id) public swapTokenIds;
+    /// @inheritdoc ICompetition
+    mapping(address account => mapping(address token => uint256 balance)) public balances;
 
+    /// @inheritdoc ICompetition
     uint256 public constant MINIMAL_DEPOSIT = 10e6;
 
     modifier onceOn() {
@@ -42,6 +53,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         _disableInitializers();
     }
 
+    /// @inheritdoc ICompetition
     function initialize(
         address _owner,
         uint256 _startTimestamp,
@@ -77,9 +89,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         _addSwapTokens(_swapTokens);
     }
 
-    /**
-     * @param _stable0 if true means stable0 is being deposited else stable1
-     */
+    /// @inheritdoc ICompetition
     function deposit(bool _stable0, uint256 amount) external notOut {
         if (block.timestamp > endTimestamp) revert Ended();
         if (amount < MINIMAL_DEPOSIT) revert InsufficientAmount();
@@ -89,6 +99,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         emit NewDeposit(msg.sender, stable, amount);
     }
 
+    /// @inheritdoc ICompetition
     function exit() external {
         uint256 length = swapTokens.length;
         bool madeWithdrawal;
@@ -202,10 +213,12 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         _noteSwap(_tokenIn, _tokenOut, amountIn, params.amountOut, SwapType.V2);
     }
 
+    /// @inheritdoc ICompetition
     function addSwapTokens(address[] memory _swapTokens) external onlyOwner {
         _addSwapTokens(_swapTokens);
     }
 
+    /// @inheritdoc ICompetition
     function isSwapToken(address _token) public view returns (bool) {
         return swapTokenIds[_token] > 0;
     }
