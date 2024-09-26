@@ -180,7 +180,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         // Perform a swap.
         amountIn = router.swapTokensForExactTokens(amountOut, amountInMax, path, address(this));
         // Nullify allowance.
-        IERC20(_tokenIn).approve(address(router), 0);
+        IERC20(_tokenIn).forceApprove(address(router), 0);
         // Note swap state changes.
         _noteSwap(_tokenIn, _tokenOut, amountIn, amountOut, SwapType.V1);
     }
