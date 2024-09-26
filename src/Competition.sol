@@ -290,7 +290,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
      */
     function _validateSwapAndApprove(address _tokenIn, address _tokenOut, uint256 _amountIn) private {
         // Ensure that both _tokenIn and _tokenOut are swappable inside the competition.
-        if (!isSwapToken(_tokenIn) && !isSwapToken(_tokenOut)) {
+        if (!isSwapToken(_tokenIn) || !isSwapToken(_tokenOut)) {
             revert InvalidRoute();
         }
         // Ensure that the competition participant has sufficient amount of tokens.
