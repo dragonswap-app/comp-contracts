@@ -4,7 +4,7 @@ pragma solidity ^0.8.25;
 import {Test, console} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {Competition} from "../src/Competition.sol";
-import {ISwapRouter02Minimal} from "../src/interfaces/ISwapRouter02Minimal.sol";
+import {ISwapRouter02Minimal, IV2SwapRouter} from "../src/interfaces/ISwapRouter02Minimal.sol";
 import {ICompetition} from "../src/interfaces/ICompetition.sol";
 import {Factory} from "../src/Factory.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils/SafeERC20.sol";
@@ -136,6 +136,44 @@ contract CompetitionTest is Test {
         assertEq(IERC20(WSEI).balanceOf(address(competition)), 0);
     }
 
+    function test_swapExactTokensForTokens() public {
+         // Add WSEI as a swap token
+         address[] memory newSwapTokens = new address[](1);
+         newSwapTokens[0] = WSEI;
+         competition.addSwapTokens(newSwapTokens);
+ 
+         // Verify WSEI is now a valid swap token
+         assertTrue(competition.isSwapToken(WSEI), "WSEI should be a valid swap token");
+ 
+         // Deposit USDT
+         assertEq(IERC20(USDT).balanceOf(address(competition)), 0);
+         uint256 usdtDepositAmount = 10000000; // 10 USDT (6 decimals)
+         IERC20(USDT).safeIncreaseAllowance(address(competition), usdtDepositAmount);
+         competition.deposit(false, usdtDepositAmount);
+     
+         // Swap USDT to WSEI
+         address[] memory usdtWseiPath = new address[](2);
+         usdtWseiPath[0] = USDT;
+         usdtWseiPath[1] = WSEI;
+ 
+         // Check if the swap path is valid
+         require(competition.isSwapToken(USDT), "USDT is not a valid swap token");
+         require(competition.isSwapToken(WSEI), "WSEI is not a valid swap token");
+     
+         // Perform the swap
+         uint256 amountOut = competition.swapExactTokensForTokens(usdtDepositAmount, 0, usdtWseiPath, address(competition));
+ 
+         // Check that the swap was successful
+         assertGt(amountOut, 0, "Swap should return a non-zero amount");
+     
+         // Exit
+         competition.exit();
+     
+         // Check that the user's USDT and WSEI balances are 0
+         assertEq(IERC20(USDT).balanceOf(address(competition)), 0);
+         assertEq(IERC20(WSEI).balanceOf(address(competition)), 0);
+    }
+
     function test_swapTokensForExactTokens() public {
         // Deposit USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
@@ -157,34 +195,88 @@ contract CompetitionTest is Test {
         assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
     }
 
-    // function test_ExactInputSingle() public {
-    //     // Deposit USDC
-    //     uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
-    //     IERC20(USDC).approve(address(competition), usdcDepositAmount);
-    //     competition.deposit(true, usdcDepositAmount);
+    function test_ExactInputSingle() public {
+        // Deposit USDC
+        uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
+        IERC20(USDC).approve(address(competition), usdcDepositAmount);
+        competition.deposit(true, usdcDepositAmount);
 
-    //     // Set up swap parameters
-    //     uint256 amountIn = 1000000; // 1 USDC (6 decimals)
-    //     uint256 amountOutMinimum = 1; // Minimum amount of WSEI to receive
-    //     ISwapRouter02Minimal.IV2SwapRouter.ExactInputSingleParams memory params = ISwapRouter02Minimal.IV2SwapRouter.ExactInputSingleParams({
-    //         tokenIn: USDC,
-    //         tokenOut: WSEI,
-    //         fee: 3000, // 0.3% fee tier
-    //         recipient: address(competition),
-    //         deadline: block.timestamp,
-    //         amountIn: amountIn,
-    //         amountOutMinimum: amountOutMinimum,
-    //         sqrtPriceLimitX96: 0
-    //     });
+        // Set up swap parameters
+        uint256 amountIn = 1000000; // 1 USDC (6 decimals)
+        uint256 amountOutMinimum = 1; // Minimum amount of WSEI to receive
+        IV2SwapRouter.ExactInputSingleParams memory params = IV2SwapRouter.ExactInputSingleParams({
+            tokenIn: USDC,
+            tokenOut: WSEI,
+            fee: 3000, // 0.3% fee tier
+            recipient: address(competition),
+            amountIn: amountIn,
+            amountOutMinimum: amountOutMinimum,
+            sqrtPriceLimitX96: 0
+        });
 
-    //     // Perform the swap
-    //     uint256 amountOut = competition.exactInputSingle(params);
+        // Perform the swap
+        uint256 amountOut = competition.exactInputSingle(params);
 
-    //     // Check that the swap was successful
-    //     assertGt(amountOut, 0, "Amount out should be greater than zero");
-    //     assertGe(amountOut, amountOutMinimum, "Amount out should be greater than or equal to minimum amount");
-    //     assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
-    //     assertEq(competition.balances(address(this), USDC), usdcDepositAmount - amountIn, "USDC balance should be reduced by amount in");
-    // }
+        // Check that the swap was successful
+        assertGt(amountOut, 0, "Amount out should be greater than zero");
+        assertGe(amountOut, amountOutMinimum, "Amount out should be greater than or equal to minimum amount");
+        assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
+        assertEq(competition.balances(address(this), USDC), usdcDepositAmount - amountIn, "USDC balance should be reduced by amount in");
+    }
+
+    function test_ExactInput() public {
+        // Deposit USDC
+        uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
+        IERC20(USDC).approve(address(competition), usdcDepositAmount);
+        competition.deposit(true, usdcDepositAmount);
+
+        // Set up swap parameters
+        uint256 amountIn = 1000000; // 1 USDC (6 decimals)
+        uint256 amountOutMinimum = 1; // Minimum amount of WSEI to receive
+
+        // Perform the swap
+        IV2SwapRouter.ExactInputParams memory params = IV2SwapRouter.ExactInputParams({
+            path: abi.encodePacked(USDC, uint24(3000), WSEI),
+            recipient: address(competition),
+            amountIn: amountIn,
+            amountOutMinimum: amountOutMinimum
+        });
+        uint256 amountOut = competition.exactInput(params);
+
+        // Check that the swap was successful
+        assertGt(amountOut, 0, "Amount out should be greater than zero");
+        assertGe(amountOut, amountOutMinimum, "Amount out should be greater than or equal to minimum amount");
+        assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
+        assertEq(competition.balances(address(this), USDC), usdcDepositAmount - amountIn, "USDC balance should be reduced by amount in");
+    }
+
+    function test_ExactOutputSingle() public {
+        // Deposit USDC
+        uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
+        IERC20(USDC).approve(address(competition), usdcDepositAmount);
+        competition.deposit(true, usdcDepositAmount);
+    
+        // Set up swap parameters
+        uint256 amountOut = 1e15; // 0.001 WSEI (18 decimals)
+        uint256 amountInMaximum = 5000000; // Increased to 5 USDC (6 decimals)
+    
+        IV2SwapRouter.ExactOutputSingleParams memory params = IV2SwapRouter.ExactOutputSingleParams({
+            tokenIn: USDC,
+            tokenOut: WSEI,
+            fee: 3000, // 0.3% fee tier
+            recipient: address(competition),
+            amountOut: amountOut,
+            amountInMaximum: amountInMaximum,
+            sqrtPriceLimitX96: 0
+        });
+    
+        // Perform the swap
+        uint256 amountIn = competition.exactOutputSingle(params);
+    
+        // Check that the swap was successful
+        assertGt(amountIn, 0, "Amount in should be greater than zero");
+        assertLe(amountIn, amountInMaximum, "Amount in should be less than or equal to maximum amount");
+        assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
+    }
 
 }

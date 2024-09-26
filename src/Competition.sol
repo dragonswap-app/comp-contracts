@@ -14,18 +14,29 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils
 contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, Multicall {
     using SafeERC20 for IERC20;
 
+    /// @inheritdoc ICompetition
     ISwapRouter02Minimal public router;
+
+    /// @inheritdoc ICompetition
     address public stable0;
+    /// @inheritdoc ICompetition
     address public stable1;
+    /// @inheritdoc ICompetition
     uint256 public startTimestamp;
+    /// @inheritdoc ICompetition
     uint256 public endTimestamp;
 
+    /// @inheritdoc ICompetition
     address[] public swapTokens;
 
-    mapping(address addr => bool exited) public isOut;
-    mapping(address addr => uint256 id) public swapTokenIds;
-    mapping(address addr => mapping(address token => uint256 balance)) public balances;
+    /// @inheritdoc ICompetition
+    mapping(address account => bool exited) public isOut;
+    /// @inheritdoc ICompetition
+    mapping(address swapToken => uint256 id) public swapTokenIds;
+    /// @inheritdoc ICompetition
+    mapping(address account => mapping(address token => uint256 balance)) public balances;
 
+    /// @inheritdoc ICompetition
     uint256 public constant MINIMAL_DEPOSIT = 10e6;
 
     modifier onceOn() {
@@ -42,6 +53,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         _disableInitializers();
     }
 
+    /// @inheritdoc ICompetition
     function initialize(
         address _owner,
         uint256 _startTimestamp,
@@ -71,15 +83,13 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         swapTokens.push(_stable0);
         swapTokenIds[_stable0] = 1;
         swapTokens.push(_stable1);
-        swapTokenIds[_stable0] = 2;
+        swapTokenIds[_stable1] = 2;
 
         // Add swap tokens
         _addSwapTokens(_swapTokens);
     }
 
-    /**
-     * @param _stable0 if true means stable0 is being deposited else stable1
-     */
+    /// @inheritdoc ICompetition
     function deposit(bool _stable0, uint256 amount) external notOut {
         if (block.timestamp > endTimestamp) revert Ended();
         if (amount < MINIMAL_DEPOSIT) revert InsufficientAmount();
@@ -89,6 +99,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         emit NewDeposit(msg.sender, stable, amount);
     }
 
+    /// @inheritdoc ICompetition
     function exit() external {
         uint256 length = swapTokens.length;
         bool madeWithdrawal;
@@ -123,9 +134,10 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountOut)
     {
-        // check balance before swap
+        // Retrieve values
         address _tokenIn = path[0];
         address _tokenOut = path[path.length - 1];
+        // Validate swap parameters and approve
         _validateSwapAndApprove(_tokenIn, _tokenOut, amountIn);
         amountOut = router.swapExactTokensForTokens(amountIn, amountOutMin, path, address(this));
         // note down balance changes
@@ -140,11 +152,16 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountIn)
     {
+        // Retrieve values
         address _tokenIn = path[0];
         address _tokenOut = path[path.length - 1];
+        // Validate swap parameters and approve tokens
         _validateSwapAndApprove(_tokenIn, _tokenOut, amountInMax);
+        // Perform a swap
         amountIn = router.swapTokensForExactTokens(amountOut, amountInMax, path, address(this));
+        // Nullify allowance
         IERC20(_tokenIn).approve(address(router), 0);
+        // Note swap state changes
         _noteSwap(_tokenIn, _tokenOut, amountIn, amountOut, SwapType.V1);
     }
 
@@ -156,11 +173,15 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountOut)
     {
+        // Retrieve values
         address _tokenIn = params.tokenIn;
         address _tokenOut = params.tokenOut;
         uint256 _amountIn = params.amountIn;
+        // Validate swap parameters
         _validateSwapAndApprove(_tokenIn, _tokenOut, _amountIn);
+        // Perform a swap
         amountOut = router.exactInputSingle(params);
+        // Note swap state changes
         _noteSwap(_tokenIn, _tokenOut, _amountIn, amountOut, SwapType.V2);
     }
 
@@ -187,7 +208,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         address _tokenIn = params.tokenIn;
         _validateSwapAndApprove(_tokenIn, _tokenOut, params.amountInMaximum);
         amountIn = router.exactOutputSingle(params);
-        IERC20(_tokenIn).approve(address(router), 0);
+        IERC20(_tokenIn).forceApprove(address(router), 0);
         _noteSwap(_tokenIn, _tokenOut, amountIn, params.amountOut, SwapType.V2);
     }
 
@@ -198,14 +219,16 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         address _tokenOut = Utils._toAddress(path, path.length - 20);
         _validateSwapAndApprove(_tokenIn, _tokenOut, params.amountInMaximum);
         amountIn = router.exactOutput(params);
-        IERC20(_tokenIn).approve(address(router), 0);
+        IERC20(_tokenIn).forceApprove(address(router), 0);
         _noteSwap(_tokenIn, _tokenOut, amountIn, params.amountOut, SwapType.V2);
     }
 
+    /// @inheritdoc ICompetition
     function addSwapTokens(address[] memory _swapTokens) external onlyOwner {
         _addSwapTokens(_swapTokens);
     }
 
+    /// @inheritdoc ICompetition
     function isSwapToken(address _token) public view returns (bool) {
         return swapTokenIds[_token] > 0;
     }
@@ -236,7 +259,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         // Ensure that the competition participant has sufficient amount of tokens.
         if (balances[msg.sender][_tokenIn] < _amountIn) revert InsufficientBalance();
         // Approve specified token amount to the router.
-        IERC20(_tokenIn).approve(address(router), _amountIn);
+        IERC20(_tokenIn).forceApprove(address(router), _amountIn);
         // Decrease _tokenIn balance.
         balances[msg.sender][_tokenIn] -= _amountIn;
     }
