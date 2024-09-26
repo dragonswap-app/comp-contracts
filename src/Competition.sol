@@ -49,67 +49,85 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         _;
     }
 
+    // Disable initializers on implementation.
     constructor() {
         _disableInitializers();
     }
 
     /// @inheritdoc ICompetition
     function initialize(
-        address _owner,
-        uint256 _startTimestamp,
-        uint256 _endTimestamp,
-        address _router,
-        address _stable0,
-        address _stable1,
-        address[] memory _swapTokens
+        address owner_,
+        uint256 startTimestamp_,
+        uint256 endTimestamp_,
+        address router_,
+        address stable0_,
+        address stable1_,
+        address[] memory swapTokens_
     ) external initializer {
-        __Ownable_init(_owner);
+        // Initialize OwnableUpgradeable
+        __Ownable_init(owner_);
 
-        if (_startTimestamp < block.timestamp || _endTimestamp < _startTimestamp + 1 days) revert();
-        startTimestamp = _startTimestamp;
-        endTimestamp = _endTimestamp;
+        // Ensure the validity of the timestamps.
+        if (startTimestamp_ < block.timestamp || endTimestamp_ < startTimestamp_ + 1 days) revert InvalidTimestamps();
 
-        Utils._isContract(_router);
-        Utils._isContract(_stable0);
-        Utils._isContract(_stable1);
+        // Ensure code is present at the specified addresses.
+        Utils._isContract(router_);
+        Utils._isContract(stable0_);
+        Utils._isContract(stable1_);
 
-        router = ISwapRouter02Minimal(_router);
-        stable0 = _stable0;
-        stable1 = _stable1;
+        // Store values.
+        router = ISwapRouter02Minimal(router_);
+        startTimestamp = startTimestamp_;
+        endTimestamp = endTimestamp_;
+        stable0 = stable0_;
+        stable1 = stable1_;
 
-        // "firstslotplaceholder" in hex
+        // "firstslotplaceholder" in hex.
+        // This helps us avoid zero value being a swapToken id.
         swapTokens.push(0x6669727374736C6f74706C616365686f6c646572);
 
-        swapTokens.push(_stable0);
-        swapTokenIds[_stable0] = 1;
-        swapTokens.push(_stable1);
-        swapTokenIds[_stable1] = 2;
+        // Manually add stables to the swapTokens structure.
+        // They're added in order to simplify the swap route check.
+        swapTokens.push(stable0_);
+        swapTokenIds[stable0_] = 1;
+        swapTokens.push(stable1_);
+        swapTokenIds[stable1_] = 2;
 
-        // Add swap tokens
-        _addSwapTokens(_swapTokens);
+        // Add swap tokens.
+        _addSwapTokens(swapTokens_);
     }
 
     /// @inheritdoc ICompetition
     function deposit(bool _stable0, uint256 amount) external notOut {
+        // Ensure competition is in progress (users can deposit before beginning).
         if (block.timestamp > endTimestamp) revert Ended();
+        // Ensure minimum deposit is crossed.
         if (amount < MINIMAL_DEPOSIT) revert InsufficientAmount();
+        // Determine which stable coin is being deposited.
         address stable = _stable0 ? stable0 : stable1;
         IERC20(stable).safeTransferFrom(msg.sender, address(this), amount);
+        // Note the balance change.
         balances[msg.sender][stable] += amount;
+        // Emit event.
         emit NewDeposit(msg.sender, stable, amount);
     }
 
     /// @inheritdoc ICompetition
     function exit() external {
         uint256 length = swapTokens.length;
+        // Flag for withdrawal of any amount of any token being made.
         bool madeWithdrawal;
+        // Flag for leftover existance (occurs when a token is stuck).
         bool leftoverExists;
         for (uint256 i; i < length; i++) {
+            // Retrieve values.
             address token = swapTokens[i];
             uint256 balance = balances[msg.sender][token];
             if (balance > 0) {
+                // Try to transfer tokens.
                 (bool success,) = token.call(abi.encodeWithSelector(IERC20.transfer.selector, msg.sender, balance));
                 if (success) {
+                    // Delete user balance for the withdrawn token and mark flag.
                     delete balances[msg.sender][token];
                     madeWithdrawal = true;
                 } else {
@@ -117,10 +135,12 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
                 }
             }
         }
+        // If user made a withdrawal and is not marked with isOut flag, mark him as being in exit process.
         if (madeWithdrawal && !isOut[msg.sender]) {
             isOut[msg.sender] = true;
             emit Exit(msg.sender);
         }
+        // If there is no leftover, delete the isOut mark, then user can safely rejoin the competition.
         if (!leftoverExists) {
             isOut[msg.sender] = false;
         }
@@ -134,13 +154,13 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountOut)
     {
-        // Retrieve values
+        // Retrieve values.
         address _tokenIn = path[0];
         address _tokenOut = path[path.length - 1];
-        // Validate swap parameters and approve
+        // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, amountIn);
         amountOut = router.swapExactTokensForTokens(amountIn, amountOutMin, path, address(this));
-        // note down balance changes
+        // note down balance changes.
         _noteSwap(_tokenIn, _tokenOut, amountIn, amountOut, SwapType.V1);
     }
 
@@ -152,16 +172,16 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountIn)
     {
-        // Retrieve values
+        // Retrieve swap data.
         address _tokenIn = path[0];
         address _tokenOut = path[path.length - 1];
-        // Validate swap parameters and approve tokens
+        // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, amountInMax);
-        // Perform a swap
+        // Perform a swap.
         amountIn = router.swapTokensForExactTokens(amountOut, amountInMax, path, address(this));
-        // Nullify allowance
-        IERC20(_tokenIn).approve(address(router), 0);
-        // Note swap state changes
+        // Nullify allowance.
+        IERC20(_tokenIn).forceApprove(address(router), 0);
+        // Note swap state changes.
         _noteSwap(_tokenIn, _tokenOut, amountIn, amountOut, SwapType.V1);
     }
 
@@ -173,26 +193,30 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountOut)
     {
-        // Retrieve values
+        // Retrieve swap data.
         address _tokenIn = params.tokenIn;
         address _tokenOut = params.tokenOut;
         uint256 _amountIn = params.amountIn;
-        // Validate swap parameters
+        // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, _amountIn);
-        // Perform a swap
+        // Perform a swap.
         amountOut = router.exactInputSingle(params);
-        // Note swap state changes
+        // Note swap state changes.
         _noteSwap(_tokenIn, _tokenOut, _amountIn, amountOut, SwapType.V2);
     }
 
     /// @inheritdoc IV2SwapRouter
     function exactInput(ExactInputParams calldata params) external payable onceOn notOut returns (uint256 amountOut) {
+        // Retrieve swap data.
         bytes memory path = params.path;
         address _tokenIn = Utils._toAddress(path, 0);
         address _tokenOut = Utils._toAddress(path, path.length - 20);
         uint256 _amountIn = params.amountIn;
+        // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, _amountIn);
+        // Perfrom a swap.
         amountOut = router.exactInput(params);
+        // Note swap state changes.
         _noteSwap(_tokenIn, _tokenOut, _amountIn, amountOut, SwapType.V2);
     }
 
@@ -204,33 +228,44 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountIn)
     {
+        // Retrieve swap data.
         address _tokenOut = params.tokenOut;
         address _tokenIn = params.tokenIn;
+        // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, params.amountInMaximum);
+        // Perfrom a swap.
         amountIn = router.exactOutputSingle(params);
+        // Nullify allowance.
         IERC20(_tokenIn).forceApprove(address(router), 0);
+        // Note swap state changes.
         _noteSwap(_tokenIn, _tokenOut, amountIn, params.amountOut, SwapType.V2);
     }
 
     /// @inheritdoc IV2SwapRouter
     function exactOutput(ExactOutputParams calldata params) external payable onceOn notOut returns (uint256 amountIn) {
+        // Retrieve swap data.
         bytes memory path = params.path;
         address _tokenIn = Utils._toAddress(path, 0);
         address _tokenOut = Utils._toAddress(path, path.length - 20);
+        // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, params.amountInMaximum);
+        // Perfrom a swap.
         amountIn = router.exactOutput(params);
+        // Nullify allowance.
         IERC20(_tokenIn).forceApprove(address(router), 0);
+        // Note swap state changes.
         _noteSwap(_tokenIn, _tokenOut, amountIn, params.amountOut, SwapType.V2);
     }
 
     /// @inheritdoc ICompetition
-    function addSwapTokens(address[] memory _swapTokens) external onlyOwner {
-        _addSwapTokens(_swapTokens);
+    function addSwapTokens(address[] memory swapTokens_) external onlyOwner {
+        _addSwapTokens(swapTokens_);
     }
 
     /// @inheritdoc ICompetition
-    function isSwapToken(address _token) public view returns (bool) {
-        return swapTokenIds[_token] > 0;
+    function isSwapToken(address token) public view returns (bool) {
+        // Token having an id implies that it is added to the swapTokens array.
+        return swapTokenIds[token] > 0;
     }
 
     function _addSwapTokens(address[] memory _swapTokens) private {
@@ -239,7 +274,9 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         uint256 length = swapTokens.length;
         for (uint256 i; i < _length; ++i) {
             address _token = _swapTokens[i];
+            // Ensure there is code at the specified address
             Utils._isContract(_token);
+            // Add token if it is not already present
             if (!isSwapToken(_token)) {
                 swapTokenIds[_token] = length++;
                 swapTokens.push(_token);
@@ -267,13 +304,13 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     /**
      * @dev Function to note down balance change after swap and emit an event with relevant information.
      */
-    function _noteSwap(address _tokenIn, address _tokenOut, uint256 _amountIn, uint256 _amountOut, SwapType _swap)
+    function _noteSwap(address _tokenIn, address _tokenOut, uint256 _amountIn, uint256 _amountOut, SwapType _swapType)
         private
     {
         // Increase _tokenOut balance.
         balances[msg.sender][_tokenOut] += _amountOut;
         // Emit event.
-        emit NewSwap(msg.sender, _tokenIn, _tokenOut, _amountIn, _amountOut, _swap);
+        emit NewSwap(msg.sender, _tokenIn, _tokenOut, _amountIn, _amountOut, _swapType);
     }
 
     /**
