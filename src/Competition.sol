@@ -134,9 +134,10 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountOut)
     {
-        // check balance before swap
+        // Retrieve values
         address _tokenIn = path[0];
         address _tokenOut = path[path.length - 1];
+        // Validate swap parameters and approve
         _validateSwapAndApprove(_tokenIn, _tokenOut, amountIn);
         amountOut = router.swapExactTokensForTokens(amountIn, amountOutMin, path, address(this));
         // note down balance changes
@@ -151,11 +152,16 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountIn)
     {
+        // Retrieve values
         address _tokenIn = path[0];
         address _tokenOut = path[path.length - 1];
+        // Validate swap parameters and approve tokens
         _validateSwapAndApprove(_tokenIn, _tokenOut, amountInMax);
+        // Perform a swap
         amountIn = router.swapTokensForExactTokens(amountOut, amountInMax, path, address(this));
+        // Nullify allowance
         IERC20(_tokenIn).approve(address(router), 0);
+        // Note swap state changes
         _noteSwap(_tokenIn, _tokenOut, amountIn, amountOut, SwapType.V1);
     }
 
@@ -167,11 +173,15 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountOut)
     {
+        // Retrieve values
         address _tokenIn = params.tokenIn;
         address _tokenOut = params.tokenOut;
         uint256 _amountIn = params.amountIn;
+        // Validate swap parameters
         _validateSwapAndApprove(_tokenIn, _tokenOut, _amountIn);
+        // Perform a swap
         amountOut = router.exactInputSingle(params);
+        // Note swap state changes
         _noteSwap(_tokenIn, _tokenOut, _amountIn, amountOut, SwapType.V2);
     }
 
@@ -198,7 +208,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         address _tokenIn = params.tokenIn;
         _validateSwapAndApprove(_tokenIn, _tokenOut, params.amountInMaximum);
         amountIn = router.exactOutputSingle(params);
-        IERC20(_tokenIn).approve(address(router), 0);
+        IERC20(_tokenIn).forceApprove(address(router), 0);
         _noteSwap(_tokenIn, _tokenOut, amountIn, params.amountOut, SwapType.V2);
     }
 
@@ -209,7 +219,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         address _tokenOut = Utils._toAddress(path, path.length - 20);
         _validateSwapAndApprove(_tokenIn, _tokenOut, params.amountInMaximum);
         amountIn = router.exactOutput(params);
-        IERC20(_tokenIn).approve(address(router), 0);
+        IERC20(_tokenIn).forceApprove(address(router), 0);
         _noteSwap(_tokenIn, _tokenOut, amountIn, params.amountOut, SwapType.V2);
     }
 
@@ -249,7 +259,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         // Ensure that the competition participant has sufficient amount of tokens.
         if (balances[msg.sender][_tokenIn] < _amountIn) revert InsufficientBalance();
         // Approve specified token amount to the router.
-        IERC20(_tokenIn).approve(address(router), _amountIn);
+        IERC20(_tokenIn).forceApprove(address(router), _amountIn);
         // Decrease _tokenIn balance.
         balances[msg.sender][_tokenIn] -= _amountIn;
     }
