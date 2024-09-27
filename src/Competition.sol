@@ -154,7 +154,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountOut)
     {
-        // Retrieve values.
+        // Retrieve tokens.
         address _tokenIn = path[0];
         address _tokenOut = path[path.length - 1];
         // Validate swap parameters and approve tokens.
@@ -173,7 +173,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountIn)
     {
-        // Retrieve swap data.
+        // Retrieve tokens.
         address _tokenIn = path[0];
         address _tokenOut = path[path.length - 1];
         // Validate swap parameters and approve tokens.
@@ -209,9 +209,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     /// @inheritdoc IV2SwapRouter
     function exactInput(ExactInputParams calldata params) external payable onceOn notOut returns (uint256 amountOut) {
         // Retrieve swap data.
-        bytes memory path = params.path;
-        address _tokenIn = Utils._toAddress(path, 0);
-        address _tokenOut = Utils._toAddress(path, path.length - 20);
+        (address _tokenIn, address _tokenOut) = _getTokensFromV2Path(params.path);
         uint256 _amountIn = params.amountIn;
         // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, _amountIn);
@@ -229,7 +227,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountIn)
     {
-        // Retrieve swap data.
+        // Retrieve tokens.
         address _tokenOut = params.tokenOut;
         address _tokenIn = params.tokenIn;
         // Validate swap parameters and approve tokens.
@@ -244,10 +242,8 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
 
     /// @inheritdoc IV2SwapRouter
     function exactOutput(ExactOutputParams calldata params) external payable onceOn notOut returns (uint256 amountIn) {
-        // Retrieve swap data.
-        bytes memory path = params.path;
-        address _tokenIn = Utils._toAddress(path, path.length - 20);
-        address _tokenOut = Utils._toAddress(path, 0);
+        // Retrieve tokens.
+        (address _tokenOut, address _tokenIn) = _getTokensFromV2Path(params.path);
         // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, params.amountInMaximum);
         // Perfrom a swap.
@@ -284,6 +280,15 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
                 emit SwapTokenAdded(_token);
             }
         }
+    }
+
+    /**
+     * @dev Function to retrieve first and last token from a V2 path.
+     * @param path is a V2 path byte-string.
+     */
+    function _getTokensFromV2Path(bytes memory path) private pure returns (address firstToken, address lastToken) {
+        firstToken = Utils._toAddress(path, 0);
+        lastToken = Utils._toAddress(path, path.length - 20);
     }
 
     /**
