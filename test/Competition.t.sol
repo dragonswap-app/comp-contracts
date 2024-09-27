@@ -12,7 +12,7 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils
 
 contract CompetitionTest is Test {
     using SafeERC20 for IERC20;
-    
+
     Competition public competition;
     Factory public factory;
     address[] public swapTokens;
@@ -37,7 +37,7 @@ contract CompetitionTest is Test {
         factory.deploy(block.timestamp, block.timestamp + 1 days, address(DS_ROUTER), USDC, USDT, swapTokens);
         Vm.Log[] memory entries = vm.getRecordedLogs();
 
-        for (uint i = 0; i < entries.length; i++) {
+        for (uint256 i = 0; i < entries.length; i++) {
             if (entries[i].topics[0] == keccak256("Deployed(address,address)")) {
                 competition = Competition(address(uint160(uint256(entries[i].topics[1]))));
                 break;
@@ -113,7 +113,7 @@ contract CompetitionTest is Test {
         uint256 usdtDepositAmount = 10000000; // 10 USDT (6 decimals)
         IERC20(USDT).safeIncreaseAllowance(address(competition), usdtDepositAmount);
         competition.deposit(false, usdtDepositAmount);
-    
+
         // Swap USDT to WSEI
         address[] memory usdtWseiPath = new address[](2);
         usdtWseiPath[0] = USDT;
@@ -122,45 +122,46 @@ contract CompetitionTest is Test {
         // Check if the swap path is valid
         require(competition.isSwapToken(USDT), "USDT is not a valid swap token");
         require(competition.isSwapToken(WSEI), "WSEI is not a valid swap token");
-    
+
         // Perform the swap
-        uint256 amountOut = competition.swapExactTokensForTokens(usdtDepositAmount, 0, usdtWseiPath, address(competition));
+        uint256 amountOut =
+            competition.swapExactTokensForTokens(usdtDepositAmount, 0, usdtWseiPath, address(competition));
 
         // Check that the swap was successful
         assertGt(amountOut, 0, "Swap should return a non-zero amount");
-    
+
         // Exit
         competition.exit();
-    
+
         // Check that the user's USDT and WSEI balances are 0
         assertEq(IERC20(USDT).balanceOf(address(competition)), 0);
         assertEq(IERC20(WSEI).balanceOf(address(competition)), 0);
     }
 
     function test_swapExactTokensForTokens() public {
-         // Add WSEI as a swap token
-         address[] memory newSwapTokens = new address[](1);
-         newSwapTokens[0] = WSEI;
-         competition.addSwapTokens(newSwapTokens);
- 
-         // Verify WSEI is now a valid swap token
-         assertTrue(competition.isSwapToken(WSEI), "WSEI should be a valid swap token");
- 
-         // Deposit USDT
-         assertEq(IERC20(USDT).balanceOf(address(competition)), 0);
-         uint256 usdtDepositAmount = 10000000; // 10 USDT (6 decimals)
-         IERC20(USDT).safeIncreaseAllowance(address(competition), usdtDepositAmount);
-         competition.deposit(false, usdtDepositAmount);
-     
-         // Swap USDT to WSEI
-         address[] memory usdtWseiPath = new address[](2);
-         usdtWseiPath[0] = USDT;
-         usdtWseiPath[1] = WSEI;
+        // Add WSEI as a swap token
+        address[] memory newSwapTokens = new address[](1);
+        newSwapTokens[0] = WSEI;
+        competition.addSwapTokens(newSwapTokens);
 
-     
-         // Perform the swap
-         uint256 amountOut = competition.swapExactTokensForTokens(usdtDepositAmount, 0, usdtWseiPath, address(competition));
- 
+        // Verify WSEI is now a valid swap token
+        assertTrue(competition.isSwapToken(WSEI), "WSEI should be a valid swap token");
+
+        // Deposit USDT
+        assertEq(IERC20(USDT).balanceOf(address(competition)), 0);
+        uint256 usdtDepositAmount = 10000000; // 10 USDT (6 decimals)
+        IERC20(USDT).safeIncreaseAllowance(address(competition), usdtDepositAmount);
+        competition.deposit(false, usdtDepositAmount);
+
+        // Swap USDT to WSEI
+        address[] memory usdtWseiPath = new address[](2);
+        usdtWseiPath[0] = USDT;
+        usdtWseiPath[1] = WSEI;
+
+        // Perform the swap
+        uint256 amountOut =
+            competition.swapExactTokensForTokens(usdtDepositAmount, 0, usdtWseiPath, address(competition));
+
         // Check that the swap was successful
         assertGt(amountOut, 0, "Amount out should be greater than zero");
         assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
@@ -218,7 +219,7 @@ contract CompetitionTest is Test {
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
         competition.deposit(true, usdcDepositAmount);
-        
+
         // Set up swap parameters
         uint256 amountOut = 1000000000000; // 0.000001 WSEI (18 decimals)
         uint256 amountInMax = 1000000; // 1 USDC (6 decimals)
@@ -232,7 +233,11 @@ contract CompetitionTest is Test {
         // Check that the swap was successful
         assertLe(amountIn, amountInMax, "Amount in should be less than or equal to max amount");
         assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
-        assertEq(competition.balances(address(this), USDC), usdcDepositAmount - amountIn, "USDC balance should be reduced by amount in");
+        assertEq(
+            competition.balances(address(this), USDC),
+            usdcDepositAmount - amountIn,
+            "USDC balance should be reduced by amount in"
+        );
     }
 
     function test_swapTokensForExactTokensFailDueToInvalidRoute() public {
@@ -240,7 +245,7 @@ contract CompetitionTest is Test {
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
         competition.deposit(true, usdcDepositAmount);
-        
+
         // Set up swap parameters
         uint256 amountOut = 1000000000000; // 0.000001 WSEI (18 decimals)
         uint256 amountInMax = 1000000; // 1 USDC (6 decimals)
@@ -263,7 +268,7 @@ contract CompetitionTest is Test {
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
         competition.deposit(true, usdcDepositAmount);
-        
+
         // Set up swap parameters
         uint256 amountOut = 10000000000; // 0.0001 WSEI (18 decimals)
         uint256 amountInMax = 100000000; // 100 USDC (6 decimals)
@@ -275,7 +280,6 @@ contract CompetitionTest is Test {
         vm.expectRevert(ICompetition.InsufficientBalance.selector);
         competition.swapExactTokensForTokens(amountOut, amountInMax, path, address(this));
     }
-    
 
     function test_ExactInputSingle() public {
         // Add WSEI as a swap token
@@ -308,7 +312,11 @@ contract CompetitionTest is Test {
         assertGt(amountOut, 0, "Amount out should be greater than zero");
         assertGe(amountOut, amountOutMinimum, "Amount out should be greater than or equal to minimum amount");
         assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
-        assertEq(competition.balances(address(this), USDC), usdcDepositAmount - amountIn, "USDC balance should be reduced by amount in");
+        assertEq(
+            competition.balances(address(this), USDC),
+            usdcDepositAmount - amountIn,
+            "USDC balance should be reduced by amount in"
+        );
     }
 
     function test_ExactInputSingleFailDueToInvalidRoute() public {
@@ -388,7 +396,11 @@ contract CompetitionTest is Test {
         assertGt(amountOut, 0, "Amount out should be greater than zero");
         assertGe(amountOut, amountOutMinimum, "Amount out should be greater than or equal to minimum amount");
         assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
-        assertEq(competition.balances(address(this), USDC), usdcDepositAmount - amountIn, "USDC balance should be reduced by amount in");
+        assertEq(
+            competition.balances(address(this), USDC),
+            usdcDepositAmount - amountIn,
+            "USDC balance should be reduced by amount in"
+        );
     }
 
     function test_ExactInputFailDueToInvalidRoute() public {
@@ -439,16 +451,16 @@ contract CompetitionTest is Test {
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
         competition.addSwapTokens(newSwapTokens);
-        
+
         // Deposit USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
         competition.deposit(true, usdcDepositAmount);
-    
+
         // Set up swap parameters
         uint256 amountOut = 1e15; // 0.001 WSEI (18 decimals)
         uint256 amountInMaximum = 5000000; // Increased to 5 USDC (6 decimals)
-    
+
         IV2SwapRouter.ExactOutputSingleParams memory params = IV2SwapRouter.ExactOutputSingleParams({
             tokenIn: USDC,
             tokenOut: WSEI,
@@ -458,15 +470,19 @@ contract CompetitionTest is Test {
             amountInMaximum: amountInMaximum,
             sqrtPriceLimitX96: 0
         });
-    
+
         // Perform the swap
         uint256 amountIn = competition.exactOutputSingle(params);
-    
+
         // Check that the swap was successful
         assertGt(amountIn, 0, "Amount in should be greater than zero");
         assertLe(amountIn, amountInMaximum, "Amount in should be less than or equal to maximum amount");
         assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
-        assertEq(competition.balances(address(this), USDC), usdcDepositAmount - amountIn, "USDC balance should be reduced by amount in");
+        assertEq(
+            competition.balances(address(this), USDC),
+            usdcDepositAmount - amountIn,
+            "USDC balance should be reduced by amount in"
+        );
     }
 
     function test_ExactOutput1() public {
@@ -479,7 +495,7 @@ contract CompetitionTest is Test {
         uint256 usdcDepositAmount = 100000000; // 100 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
         competition.deposit(true, usdcDepositAmount);
-    
+
         // Set up ExactOutput swap parameters for USDC to WSEI
         uint256 amountOut = 1e14; // 0.0001 WSEI (18 decimals)
         uint256 amountInMaximum = 10000000; // 10 USDC (6 decimals)
@@ -503,13 +519,17 @@ contract CompetitionTest is Test {
         console.log("usdc user balance on competition", competition.balances(address(this), USDC));
         console.log("wsei user balance on competition", competition.balances(address(this), WSEI));
 
-
         // Check that the ExactOutput swap was successful
         assertGt(amountIn, 0, "ExactOutput: Amount in should be greater than zero");
         assertLe(amountIn, amountInMaximum, "ExactOutput: Amount in should be less than or equal to maximum amount");
-        assertEq(competition.balances(address(this), WSEI), amountOut, "ExactOutput: WSEI balance should match amount out");
-        assertEq(competition.balances(address(this), USDC), usdcDepositAmount - amountIn, "ExactOutput: USDC balance should be reduced by amount in");
-        
+        assertEq(
+            competition.balances(address(this), WSEI), amountOut, "ExactOutput: WSEI balance should match amount out"
+        );
+        assertEq(
+            competition.balances(address(this), USDC),
+            usdcDepositAmount - amountIn,
+            "ExactOutput: USDC balance should be reduced by amount in"
+        );
     }
 
     function test_ExactOutputFailDueToInvalidRoute() public {
@@ -517,18 +537,18 @@ contract CompetitionTest is Test {
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
         competition.deposit(true, usdcDepositAmount);
-    
+
         // Set up swap parameters with an invalid route (USDC to WSEI, where WSEI is not a swap token)
         uint256 amountOut = 1e18; // 1 WSEI (18 decimals)
         uint256 amountInMaximum = 5000000; // 5 USDC (6 decimals)
-    
+
         IV2SwapRouter.ExactOutputParams memory params = IV2SwapRouter.ExactOutputParams({
             path: abi.encodePacked(WSEI, uint24(3000), USDC), // Invalid route: WSEI is not a swap token
             recipient: address(competition),
             amountOut: amountOut,
             amountInMaximum: amountInMaximum
         });
-    
+
         // Expect the transaction to revert with InvalidRoute error
         vm.expectRevert(ICompetition.InvalidRoute.selector);
         competition.exactOutput(params);
@@ -539,23 +559,23 @@ contract CompetitionTest is Test {
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
         competition.addSwapTokens(newSwapTokens);
-    
+
         // Deposit a small amount of USDC
         uint256 usdcDepositAmount = 10000000; // 1 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
         competition.deposit(true, usdcDepositAmount);
-    
+
         // Set up swap parameters with an amount larger than the deposited balance
         uint256 amountOut = 1e16; // 0.01 WSEI (18 decimals)
         uint256 amountInMaximum = 20000000; // 20 USDC (6 decimals), which is more than deposited
-    
+
         IV2SwapRouter.ExactOutputParams memory params = IV2SwapRouter.ExactOutputParams({
             path: abi.encodePacked(WSEI, uint24(3000), USDC),
             recipient: address(competition),
             amountOut: amountOut,
             amountInMaximum: amountInMaximum
         });
-    
+
         // Expect the transaction to revert with InsufficientBalance error
         vm.expectRevert(ICompetition.InsufficientBalance.selector);
         competition.exactOutput(params);

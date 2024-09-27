@@ -121,7 +121,7 @@ interface ICompetition {
      */
     function isOut(address account) external view returns (bool);
 
-     /**
+    /**
      * @dev Hash map storing ids of swap tokens.
      * If token has an id (id > 0), then it is a swap token.
      * @param token is the token address.
