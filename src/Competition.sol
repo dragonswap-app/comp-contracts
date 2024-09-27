@@ -159,6 +159,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         address _tokenOut = path[path.length - 1];
         // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, amountIn);
+        // Perform a swap.
         amountOut = router.swapExactTokensForTokens(amountIn, amountOutMin, path, address(this));
         // note down balance changes.
         _noteSwap(_tokenIn, _tokenOut, amountIn, amountOut, SwapType.V1);
@@ -245,8 +246,8 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     function exactOutput(ExactOutputParams calldata params) external payable onceOn notOut returns (uint256 amountIn) {
         // Retrieve swap data.
         bytes memory path = params.path;
-        address _tokenIn = Utils._toAddress(path, 0);
-        address _tokenOut = Utils._toAddress(path, path.length - 20);
+        address _tokenIn = Utils._toAddress(path, path.length - 20);
+        address _tokenOut = Utils._toAddress(path, 0);
         // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, params.amountInMaximum);
         // Perfrom a swap.
@@ -297,8 +298,6 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         if (balances[msg.sender][_tokenIn] < _amountIn) revert InsufficientBalance();
         // Approve specified token amount to the router.
         IERC20(_tokenIn).forceApprove(address(router), _amountIn);
-        // Decrease _tokenIn balance.
-        balances[msg.sender][_tokenIn] -= _amountIn;
     }
 
     /**
@@ -307,6 +306,8 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     function _noteSwap(address _tokenIn, address _tokenOut, uint256 _amountIn, uint256 _amountOut, SwapType _swapType)
         private
     {
+        // Decrease _tokenIn balance
+        balances[msg.sender][_tokenIn] -= _amountIn;
         // Increase _tokenOut balance.
         balances[msg.sender][_tokenOut] += _amountOut;
         // Emit event.
