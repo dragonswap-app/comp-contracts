@@ -149,7 +149,6 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     /// @inheritdoc IV1SwapRouter
     function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address /*to*/ )
         external
-        payable
         onceOn
         notOut
         returns (uint256 amountOut)
@@ -168,7 +167,6 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     /// @inheritdoc IV1SwapRouter
     function swapTokensForExactTokens(uint256 amountOut, uint256 amountInMax, address[] calldata path, address /*to*/ )
         external
-        payable
         onceOn
         notOut
         returns (uint256 amountIn)
@@ -189,7 +187,6 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     /// @inheritdoc IV2SwapRouter
     function exactInputSingle(ExactInputSingleParams calldata params)
         external
-        payable
         onceOn
         notOut
         returns (uint256 amountOut)
@@ -207,7 +204,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactInput(ExactInputParams calldata params) external payable onceOn notOut returns (uint256 amountOut) {
+    function exactInput(ExactInputParams calldata params) external onceOn notOut returns (uint256 amountOut) {
         // Retrieve swap data.
         (address _tokenIn, address _tokenOut) = _getTokensFromV2Path(params.path);
         uint256 _amountIn = params.amountIn;
@@ -222,7 +219,6 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     /// @inheritdoc IV2SwapRouter
     function exactOutputSingle(ExactOutputSingleParams calldata params)
         external
-        payable
         onceOn
         notOut
         returns (uint256 amountIn)
@@ -241,7 +237,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactOutput(ExactOutputParams calldata params) external payable onceOn notOut returns (uint256 amountIn) {
+    function exactOutput(ExactOutputParams calldata params) external onceOn notOut returns (uint256 amountIn) {
         // Retrieve tokens.
         (address _tokenOut, address _tokenIn) = _getTokensFromV2Path(params.path);
         // Validate swap parameters and approve tokens.
