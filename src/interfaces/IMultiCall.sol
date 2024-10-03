@@ -4,7 +4,6 @@ pragma solidity 0.8.25;
 /// @title Multicall interface
 /// @notice Enables calling multiple methods in a single call to the contract
 interface IMulticall {
-
     /// Errors
     error BlockHash();
     error Deadline();

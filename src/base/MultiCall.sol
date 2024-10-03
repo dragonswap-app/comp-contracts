@@ -6,15 +6,9 @@ import "../interfaces/IMulticall.sol";
 /// @title Multicall
 /// @notice Enables calling multiple methods in a single call to the contract
 abstract contract Multicall is IMulticall {
-
     /// @inheritdoc IMulticall
-    function multicall(uint256 deadline, bytes[] calldata data)
-        external
-        payable
-        override
-        returns (bytes[] memory)
-    {
-        if(block.timestamp > deadline) revert Deadline();
+    function multicall(uint256 deadline, bytes[] calldata data) external payable override returns (bytes[] memory) {
+        if (block.timestamp > deadline) revert Deadline();
         return multicall(data);
     }
 
@@ -25,7 +19,7 @@ abstract contract Multicall is IMulticall {
         override
         returns (bytes[] memory)
     {
-        if(blockhash(block.number - 1) != previousBlockhash) revert BlockHash();
+        if (blockhash(block.number - 1) != previousBlockhash) revert BlockHash();
         return multicall(data);
     }
 
