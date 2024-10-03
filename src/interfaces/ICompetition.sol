@@ -43,6 +43,8 @@ interface ICompetition {
     error InvalidRoute();
     /// @dev Competition hasn't stated yet (swaps cannot be made before the start).
     error NotOnYet();
+    /// @dev Competition has ended (swaps cannot be made after the end).
+    error IsEnded();
     /// @dev Invalid start/end timestamp(s) on initialization.
     error InvalidTimestamps();
 
