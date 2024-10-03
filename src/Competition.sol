@@ -324,6 +324,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
      */
     function _isOnCheck() private view {
         if (block.timestamp < startTimestamp) revert NotOnYet();
+        if (block.timestamp > endTimestamp) revert IsEnded();
     }
 
     /**
