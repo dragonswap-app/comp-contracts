@@ -90,8 +90,10 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         // They're added in order to simplify the swap route check.
         swapTokens.push(stable0_);
         swapTokenIds[stable0_] = 1;
+        emit SwapTokenAdded(stable0_);
         swapTokens.push(stable1_);
         swapTokenIds[stable1_] = 2;
+        emit SwapTokenAdded(stable1_);
 
         // Add swap tokens.
         _addSwapTokens(swapTokens_);
@@ -117,7 +119,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         uint256 length = swapTokens.length;
         // Flag for withdrawal of any amount of any token being made.
         bool madeWithdrawal;
-        // Flag for leftover existance (occurs when a token is stuck).
+        // Flag for leftover existence (occurs when a token is stuck).
         bool leftoverExists;
         for (uint256 i; i < length; i++) {
             // Retrieve values.
@@ -219,7 +221,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         uint256 _amountIn = params.amountIn;
         // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, _amountIn);
-        // Perfrom a swap.
+        // Perform a swap.
         amountOut = router.exactInput(params);
         // Note swap state changes.
         _noteSwap(_tokenIn, _tokenOut, _amountIn, amountOut, SwapType.V2);
