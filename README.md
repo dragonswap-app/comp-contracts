@@ -47,8 +47,23 @@ $ anvil
 
 ### Deploy
 
+Give the script the correct permissions and run it:
+
 ```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+$ chmod +x script/deployFactory.sh
+$ ./script/deployFactory.sh <network> # mainnet or testnet
+```
+
+```shell
+$ chmod +x script/deployCompetition.sh
+$ ./script/deployCompetition.sh <network> # mainnet or testnet
+```
+
+### Add Swap Tokens
+
+```shell
+$ chmod +x script/addSwapTokens.sh
+$ ./script/addSwapTokens.sh <network> # mainnet or testnet
 ```
 
 ### Cast
