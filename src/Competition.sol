@@ -153,9 +153,12 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountOut)
     {
+        // Check path.
+        uint256 pathLength = path.length;
+        if (pathLength < 2) revert InvalidPathLength();
         // Retrieve tokens.
         address _tokenIn = path[0];
-        address _tokenOut = path[path.length - 1];
+        address _tokenOut = path[pathLength - 1];
         // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, amountIn);
         // Perform a swap.
@@ -171,9 +174,12 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         notOut
         returns (uint256 amountIn)
     {
+        // Check path.
+        uint256 pathLength = path.length;
+        if (pathLength < 2) revert InvalidPathLength();
         // Retrieve tokens.
         address _tokenIn = path[0];
-        address _tokenOut = path[path.length - 1];
+        address _tokenOut = path[pathLength - 1];
         // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, amountInMax);
         // Perform a swap.
@@ -205,8 +211,11 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
 
     /// @inheritdoc IV2SwapRouter
     function exactInput(ExactInputParams calldata params) external onceOn notOut returns (uint256 amountOut) {
+        // Check path.
+        bytes memory path = params.path;
+        _pathLengthCheck(path);
         // Retrieve swap data.
-        (address _tokenIn, address _tokenOut) = _getTokensFromV2Path(params.path);
+        (address _tokenIn, address _tokenOut) = _getTokensFromV2Path(path);
         uint256 _amountIn = params.amountIn;
         // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, _amountIn);
@@ -238,8 +247,11 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
 
     /// @inheritdoc IV2SwapRouter
     function exactOutput(ExactOutputParams calldata params) external onceOn notOut returns (uint256 amountIn) {
+        // Check path.
+        bytes memory path = params.path;
+        _pathLengthCheck(path);
         // Retrieve tokens.
-        (address _tokenOut, address _tokenIn) = _getTokensFromV2Path(params.path);
+        (address _tokenOut, address _tokenIn) = _getTokensFromV2Path(path);
         // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, params.amountInMaximum);
         // Perfrom a swap.
@@ -291,6 +303,8 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
      * @dev Function to validate swap parameters and prepare state for a swap.
      */
     function _validateSwapAndApprove(address _tokenIn, address _tokenOut, uint256 _amountIn) private {
+        // Check input amount.
+        if (inputAmount == 0) revert InvalidAmountIn(); 
         // Ensure that both _tokenIn and _tokenOut are swappable inside the competition.
         if (!isSwapToken(_tokenIn) || !isSwapToken(_tokenOut)) {
             revert InvalidRoute();
@@ -328,5 +342,14 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
      */
     function _isNotOutCheck() private view {
         if (isOut[msg.sender]) revert AlreadyLeft();
+    }
+
+    /**
+     * @dev Path consists of addresses and fees (like: addr + fee + addr + fee),
+     * therefore in order to contain a single swap path should be at least 43 bytes long (2 addresses + uint24 fee).
+     * The other check ensures path length fits the format.
+     */
+    function _pathLengthCheck(bytes memory path) private pure {
+        if (path.length < 43 || (path.length - 20) % 23 != 0) revert InvalidPathLength();
     }
 }

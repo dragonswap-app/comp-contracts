@@ -33,8 +33,10 @@ interface ICompetition {
 
     /// @dev User is in the exit process.
     error AlreadyLeft();
-    /// @dev competition alredy ended.
+    /// @dev Competition alredy ended.
     error Ended();
+    /// @dev Input amount equals zero.
+    error InvalidAmountIn();
     /// @dev Insufficient depsit amount.
     error InsufficientAmount();
     /// @dev Insufficient balance to execute a swap.
@@ -47,6 +49,8 @@ interface ICompetition {
     error IsEnded();
     /// @dev Invalid start/end timestamp(s) on initialization.
     error InvalidTimestamps();
+    /// @dev Invalid path length in both case of an array and byte-string.
+    error InvalidPathLength();
 
     /**
      * @dev Competition contract initialization function.
