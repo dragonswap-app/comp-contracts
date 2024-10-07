@@ -14,7 +14,7 @@ interface ICompetition {
     event NewDeposit(address indexed account, address indexed stable, uint256 amount);
     event Exit(address indexed account);
     /**
-     * @dev Event occuring on every new swap being made.
+     * @dev Event occurring on every new swap being made.
      * @param account is user account that made the swap.
      * @param tokenIn is the token that user sold.
      * @param tokenOut is the token that user bought.
@@ -33,11 +33,11 @@ interface ICompetition {
 
     /// @dev User is in the exit process.
     error AlreadyLeft();
-    /// @dev Competition alredy ended.
+    /// @dev Competition already ended.
     error Ended();
     /// @dev Input amount equals zero.
     error InvalidAmountIn();
-    /// @dev Insufficient depsit amount.
+    /// @dev Insufficient deposit amount.
     error InsufficientAmount();
     /// @dev Insufficient balance to execute a swap.
     error InsufficientBalance();

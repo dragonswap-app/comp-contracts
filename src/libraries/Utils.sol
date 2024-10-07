@@ -11,7 +11,7 @@ library Utils {
      * @dev Function to check if there is code present at the specified address.
      */
     function _isContract(address _addr) internal view {
-        // If address contains no code - revert (also substitues address zero check).
+        // If address contains no code - revert (also substitutes address zero check).
         if (address(_addr).code.length == 0) revert NotAContract();
     }
 
