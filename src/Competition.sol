@@ -9,6 +9,7 @@ import {Utils} from "./libraries/Utils.sol";
 import {Multicall} from "./base/Multicall.sol";
 
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable@5.0.2/access/Ownable2StepUpgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable@5.0.2/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils/SafeERC20.sol";
 
 contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradeable, Multicall {
@@ -66,6 +67,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradea
     ) external initializer {
         // Initialize OwnableUpgradeable
         __Ownable_init(owner_);
+        __ReentrancyGuard_init();
 
         // Ensure the validity of the timestamps.
         if (startTimestamp_ < block.timestamp || endTimestamp_ < startTimestamp_ + 1 days) revert InvalidTimestamps();
@@ -114,7 +116,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradea
     }
 
     /// @inheritdoc ICompetition
-    function exit() external {
+    function exit() external nonReentrant {
         uint256 length = swapTokens.length;
         // Flag for withdrawal of any amount of any token being made.
         bool madeWithdrawal;
@@ -152,6 +154,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradea
         external
         onceOn
         notOut
+        nonReentrant
         returns (uint256 amountOut)
     {
         // Check path.
@@ -173,6 +176,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradea
         external
         onceOn
         notOut
+        nonReentrant
         returns (uint256 amountIn)
     {
         // Check path.
@@ -196,6 +200,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradea
         external
         onceOn
         notOut
+        nonReentrant
         returns (uint256 amountOut)
     {
         // Retrieve swap data.
@@ -213,7 +218,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradea
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactInput(ExactInputParams memory params) external onceOn notOut returns (uint256 amountOut) {
+    function exactInput(ExactInputParams memory params) external onceOn notOut nonReentrant returns (uint256 amountOut) {
         // Check path.
         bytes memory path = params.path;
         _pathLengthCheck(path);
@@ -235,6 +240,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradea
         external
         onceOn
         notOut
+        nonReentrant
         returns (uint256 amountIn)
     {
         // Retrieve tokens.
@@ -253,7 +259,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradea
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactOutput(ExactOutputParams memory params) external onceOn notOut returns (uint256 amountIn) {
+    function exactOutput(ExactOutputParams memory params) external onceOn notOut nonReentrant returns (uint256 amountIn) {
         // Check path.
         bytes memory path = params.path;
         _pathLengthCheck(path);
