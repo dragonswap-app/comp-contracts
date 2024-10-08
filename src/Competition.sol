@@ -193,7 +193,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactInputSingle(ExactInputSingleParams calldata params)
+    function exactInputSingle(ExactInputSingleParams memory params)
         external
         onceOn
         notOut
@@ -203,6 +203,8 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         address _tokenIn = params.tokenIn;
         address _tokenOut = params.tokenOut;
         uint256 _amountIn = params.amountIn;
+        // Override recipient.
+        params.recipient = address(this);
         // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, _amountIn);
         // Perform a swap.
@@ -212,13 +214,15 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactInput(ExactInputParams calldata params) external onceOn notOut returns (uint256 amountOut) {
+    function exactInput(ExactInputParams memory params) external onceOn notOut returns (uint256 amountOut) {
         // Check path.
         bytes memory path = params.path;
         _pathLengthCheck(path);
         // Retrieve swap data.
         (address _tokenIn, address _tokenOut) = _getTokensFromV2Path(path);
         uint256 _amountIn = params.amountIn;
+        // Override recipient.
+        params.recipient = address(this);
         // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, _amountIn);
         // Perform a swap.
@@ -228,7 +232,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactOutputSingle(ExactOutputSingleParams calldata params)
+    function exactOutputSingle(ExactOutputSingleParams memory params)
         external
         onceOn
         notOut
@@ -237,6 +241,8 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
         // Retrieve tokens.
         address _tokenOut = params.tokenOut;
         address _tokenIn = params.tokenIn;
+        // Override recipient.
+        params.recipient = address(this);
         // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, params.amountInMaximum);
         // Perfrom a swap.
@@ -248,12 +254,14 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactOutput(ExactOutputParams calldata params) external onceOn notOut returns (uint256 amountIn) {
+    function exactOutput(ExactOutputParams memory params) external onceOn notOut returns (uint256 amountIn) {
         // Check path.
         bytes memory path = params.path;
         _pathLengthCheck(path);
         // Retrieve tokens.
         (address _tokenOut, address _tokenIn) = _getTokensFromV2Path(path);
+        // Override recipient.
+        params.recipient = address(this);
         // Validate swap parameters and approve tokens.
         _validateSwapAndApprove(_tokenIn, _tokenOut, params.amountInMaximum);
         // Perfrom a swap.
@@ -306,7 +314,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, 
      */
     function _validateSwapAndApprove(address _tokenIn, address _tokenOut, uint256 _amountIn) private {
         // Check input amount.
-        if (inputAmount == 0) revert InvalidAmountIn(); 
+        if (_amountIn == 0) revert InvalidAmountIn(); 
         // Ensure that both _tokenIn and _tokenOut are swappable inside the competition.
         if (!isSwapToken(_tokenIn) || !isSwapToken(_tokenOut)) {
             revert InvalidRoute();
