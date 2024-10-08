@@ -8,10 +8,10 @@ import {Utils} from "./libraries/Utils.sol";
 
 import {Multicall} from "./base/Multicall.sol";
 
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable@5.0.2/access/OwnableUpgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable@5.0.2/access/Ownable2StepUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils/SafeERC20.sol";
 
-contract Competition is ICompetition, ISwapRouter02Minimal, OwnableUpgradeable, Multicall {
+contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradeable, Multicall {
     using SafeERC20 for IERC20;
 
     /// @inheritdoc ICompetition
