@@ -82,9 +82,8 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradea
         stable0 = stable0_;
         stable1 = stable1_;
 
-        // "firstslotplaceholder" in hex.
         // This helps us avoid zero value being a swapToken id.
-        swapTokens.push(0x6669727374736C6f74706C616365686f6c646572);
+        swapTokens.push(address(0xdead));
 
         // Manually add stables to the swapTokens structure.
         // They're added in order to simplify the swap route check.
