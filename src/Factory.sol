@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {ICompetition} from "./interfaces/ICompetition.sol";
 
-contract Factory is Ownable {
+contract Factory is Ownable2Step {
     /// @dev Flag for the competition instances deployed by this factory instance.
     mapping(address => bool) public isDeployedThroughFactory;
     /// @dev Array of all the competition deployments.
@@ -72,7 +72,9 @@ contract Factory is Ownable {
         deployments.push(instance);
 
         // Initialize the instance.
-        ICompetition(instance).initialize(owner(), _startTimestamp, _endTimestamp, _router, _stable0, _stable1, _swapTokens);
+        ICompetition(instance).initialize(
+            owner(), _startTimestamp, _endTimestamp, _router, _stable0, _stable1, _swapTokens
+        );
         // Emit event.
         emit Deployed(instance, impl);
     }

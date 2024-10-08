@@ -9,10 +9,17 @@ import {Utils} from "./libraries/Utils.sol";
 import {Multicall} from "./base/Multicall.sol";
 
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable@5.0.2/access/Ownable2StepUpgradeable.sol";
-import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable@5.0.2/utils/ReentrancyGuardUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from
+    "@openzeppelin/contracts-upgradeable@5.0.2/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils/SafeERC20.sol";
 
-contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradeable, Multicall {
+contract Competition is
+    ICompetition,
+    ISwapRouter02Minimal,
+    ReentrancyGuardUpgradeable,
+    Ownable2StepUpgradeable,
+    Multicall
+{
     using SafeERC20 for IERC20;
 
     /// @inheritdoc ICompetition
@@ -218,7 +225,13 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradea
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactInput(ExactInputParams memory params) external onceOn notOut nonReentrant returns (uint256 amountOut) {
+    function exactInput(ExactInputParams memory params)
+        external
+        onceOn
+        notOut
+        nonReentrant
+        returns (uint256 amountOut)
+    {
         // Check path.
         bytes memory path = params.path;
         _pathLengthCheck(path);
@@ -259,7 +272,13 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradea
     }
 
     /// @inheritdoc IV2SwapRouter
-    function exactOutput(ExactOutputParams memory params) external onceOn notOut nonReentrant returns (uint256 amountIn) {
+    function exactOutput(ExactOutputParams memory params)
+        external
+        onceOn
+        notOut
+        nonReentrant
+        returns (uint256 amountIn)
+    {
         // Check path.
         bytes memory path = params.path;
         _pathLengthCheck(path);
@@ -319,7 +338,7 @@ contract Competition is ICompetition, ISwapRouter02Minimal, Ownable2StepUpgradea
      */
     function _validateSwapAndApprove(address _tokenIn, address _tokenOut, uint256 _amountIn) private {
         // Check input amount.
-        if (_amountIn == 0) revert InvalidAmountIn(); 
+        if (_amountIn == 0) revert InvalidAmountIn();
         // Ensure that both _tokenIn and _tokenOut are swappable inside the competition.
         if (!isSwapToken(_tokenIn) || !isSwapToken(_tokenOut)) {
             revert InvalidRoute();
