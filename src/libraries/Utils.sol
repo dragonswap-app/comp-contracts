@@ -21,7 +21,6 @@ library Utils {
      * @param _start represents the number of a byte at which the address starts.
      */
     function _toAddress(bytes memory _bytes, uint256 _start) internal pure returns (address addr) {
-        if (_start > type(uint256).max - 20) revert ToAddressOverflow();
         if (_bytes.length < _start + 20) revert ToAddressOutOfBounds();
         assembly {
             addr := div(mload(add(add(_bytes, 0x20), _start)), 0x1000000000000000000000000)
