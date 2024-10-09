@@ -189,16 +189,16 @@ contract CompetitionTest is Test {
         data[0] = abi.encodeWithSelector(
             competition.swapExactTokensForTokens.selector,
             usdtDepositAmount,
-            0,  // amountOutMin
+            0, // amountOutMin
             usdtWseiPath,
             address(competition)
         );
-    
+
         // Log each element of the data array
-        for (uint i = 0; i < data.length; i++) {
+        for (uint256 i = 0; i < data.length; i++) {
             console.logBytes(data[i]);
         }
-    
+
         // Perform the swap
         bytes[] memory results = competition.multicall(data);
         uint256 amountOut = abi.decode(results[0], (uint256));
@@ -300,14 +300,10 @@ contract CompetitionTest is Test {
 
         bytes[] memory data = new bytes[](1);
         data[0] = abi.encodeWithSelector(
-            competition.swapTokensForExactTokens.selector,
-            amountOut,
-            amountInMax,
-            path,
-            address(competition)
+            competition.swapTokensForExactTokens.selector, amountOut, amountInMax, path, address(competition)
         );
 
-        // Perform the swap 
+        // Perform the swap
         bytes[] memory results = competition.multicall(data);
         uint256 amountIn = abi.decode(results[0], (uint256));
 
@@ -433,15 +429,15 @@ contract CompetitionTest is Test {
         bytes[] memory results = competition.multicall(data);
         uint256 amountOut = abi.decode(results[0], (uint256));
 
-            // Check that the swap was successful
-            assertGt(amountOut, 0, "Amount out should be greater than zero");
-            assertGe(amountOut, amountOutMinimum, "Amount out should be greater than or equal to minimum amount");
-            assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
-            assertEq(
-                competition.balances(address(this), USDC),
-                usdcDepositAmount - amountIn,
-                "USDC balance should be reduced by amount in"
-            );
+        // Check that the swap was successful
+        assertGt(amountOut, 0, "Amount out should be greater than zero");
+        assertGe(amountOut, amountOutMinimum, "Amount out should be greater than or equal to minimum amount");
+        assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
+        assertEq(
+            competition.balances(address(this), USDC),
+            usdcDepositAmount - amountIn,
+            "USDC balance should be reduced by amount in"
+        );
     }
 
     function test_ExactInputSingleFailDueToInvalidRoute() public {
@@ -745,10 +741,9 @@ contract CompetitionTest is Test {
         });
 
         // Expect the transaction to revert with InsufficientBalance error
-        vm.expectRevert(ICompetition.InsufficientBalance.selector); 
+        vm.expectRevert(ICompetition.InsufficientBalance.selector);
         competition.exactOutputSingle(params);
     }
-        
 
     function test_ExactOutput() public {
         // Add WSEI as a swap token

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {ICompetition} from "./interfaces/ICompetition.sol";
 
-contract Factory is Ownable {
-    // Type of contracts deployed by factory
+contract Factory is Ownable2Step {
+    /// @dev Flag for the competition instances deployed by this factory instance.
     mapping(address => bool) public isDeployedThroughFactory;
-    // Array of all sale deployments
+    /// @dev Array of all the competition deployments.
     address[] public deployments;
-    // Competition contract implementation
+    /// @dev Competition contract implementation.
     address public implementation;
 
     // Events
@@ -25,16 +25,16 @@ contract Factory is Ownable {
     constructor(address _owner) Ownable(_owner) {}
 
     /**
-     * @dev Function to set new competition contract implementation
+     * @dev Function to set new competition contract implementation.
      */
     function setImplementation(address _implementation) external onlyOwner {
-        // Require that implementation is different from current one
+        // Require that implementation is different from current one.
         if (implementation == _implementation) {
             revert ImplementationAlreadySet();
         }
-        // Set new implementation
+        // Set new implementation.
         implementation = _implementation;
-        // Emit relevant event
+        // Emit relevant event.
         emit ImplementationSet(_implementation);
     }
 
@@ -42,12 +42,12 @@ contract Factory is Ownable {
         uint256 _startTimestamp,
         uint256 _endTimestamp,
         address _router,
-        address _usdc,
-        address _usdt,
+        address _stable0,
+        address _stable1,
         address[] memory _swapTokens
     ) external onlyOwner {
         address impl = implementation;
-        // Require that implementation is set
+        // Require that implementation is set.
         if (impl == address(0)) {
             revert ImplementationNotSet();
         }
@@ -61,59 +61,61 @@ contract Factory is Ownable {
             mstore(0x20, or(shl(0x78, impl), 0x5af43d82803e903d91602b57fd5bf3))
             instance := create(0, 0x09, 0x37)
         }
-        // Require that clone is created
+        // Require that a clone instance is made successfully.
         if (instance == address(0)) {
             revert CloneCreationFailed();
         }
 
-        // Mark sale as created through official factory
+        // Mark the deployment as created through factory.
         isDeployedThroughFactory[instance] = true;
-        // Add sale to allSales
+        // Add the deployment to the deployments array.
         deployments.push(instance);
 
-        // Initialize
-        ICompetition(instance).initialize(owner(), _startTimestamp, _endTimestamp, _router, _usdc, _usdt, _swapTokens);
-
+        // Initialize the instance.
+        ICompetition(instance).initialize(
+            owner(), _startTimestamp, _endTimestamp, _router, _stable0, _stable1, _swapTokens
+        );
+        // Emit event.
         emit Deployed(instance, impl);
     }
-    /**
-     * @dev Function to retrieve total number of deployments made by this factory
-     */
 
+    /**
+     * @dev Function to retrieve total number of deployments made by this factory.
+     */
     function noOfDeployments() public view returns (uint256) {
         return deployments.length;
     }
 
     /**
-     * @dev Function to retrieve the address of the latest deployment made by this factory
-     * @return Latest deployment address
+     * @dev Function to retrieve the address of the latest deployment made by this factory.
+     * @return The latest deployment address.
      */
     function getLatestDeployment() external view returns (address) {
         uint256 _noOfDeployments = noOfDeployments();
         if (_noOfDeployments > 0) return deployments[_noOfDeployments - 1];
-        // Return zero address if no deployments were made
+        // Return zero address if no deployments were made.
         return address(0);
     }
 
     /**
-     * @dev Function to retrieve all deployments between indexes
-     * @param startIndex First index
-     * @param endIndex Last index
-     * @return _deployments All deployments between provided indexes, inclusive
+     * @dev Function to retrieve all deployments between indexes.
+     * @param startIndex First index.
+     * @param endIndex Last index.
+     * @return _deployments All deployments between provided indexes, inclusive.
      */
     function getAllDeployments(uint256 startIndex, uint256 endIndex)
         external
         view
         returns (address[] memory _deployments)
     {
-        // Require valid index input
+        // Require valid index input.
         if (endIndex < startIndex || endIndex >= deployments.length) {
             revert InvalidIndexRange();
         }
-        // Initialize new array
+        // Initialize a new array.
         _deployments = new address[](endIndex - startIndex + 1);
         uint256 index = 0;
-        // Fill the array with sale addresses
+        // Fill the array with the deployment addresses.
         for (uint256 i = startIndex; i <= endIndex; i++) {
             _deployments[index] = deployments[i];
             index++;
