@@ -60,7 +60,7 @@ echo "Competition deployment transaction hash: $TX_HASH"
 
 # Wait for transaction confirmation
 echo "Waiting for transaction confirmation..."
-cast receipt --rpc-url $RPC_URL $TX_HASH --async
+WAIT=$(cast receipt --rpc-url $RPC_URL $TX_HASH --async)
 
 TX_LOGS=$(cast receipt --rpc-url $RPC_URL $TX_HASH --json | jq '.logs')
 
