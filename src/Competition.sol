@@ -135,8 +135,10 @@ contract Competition is
             uint256 balance = balances[msg.sender][token];
             if (balance > 0) {
                 // Try to transfer tokens.
-                (bool success,) = token.call(abi.encodeWithSelector(IERC20.transfer.selector, msg.sender, balance));
-                if (success) {
+                (bool success, bytes memory returndata) =
+                    token.call(abi.encodeWithSelector(IERC20.transfer.selector, msg.sender, balance));
+                // Support non-standard tokens that do not fail on transfer
+                if (success && (returndata.length == 0 || abi.decode(returndata, (bool)))) {
                     // Delete user balance for the withdrawn token and mark flag.
                     delete balances[msg.sender][token];
                     madeWithdrawal = true;
