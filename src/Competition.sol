@@ -138,7 +138,7 @@ contract Competition is
                 (bool success, bytes memory returndata) =
                     token.call(abi.encodeWithSelector(IERC20.transfer.selector, msg.sender, balance));
                 // Support non-standard tokens that do not fail on transfer
-                if (success && !(returndata.length != 0 && !abi.decode(returndata, (bool)))) {
+                if (success && (returndata.length == 0 || abi.decode(returndata, (bool)))) {
                     // Delete user balance for the withdrawn token and mark flag.
                     delete balances[msg.sender][token];
                     madeWithdrawal = true;
