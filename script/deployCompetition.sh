@@ -9,7 +9,9 @@ REPO_BASE_PATH=$(
 )
 
 source $REPO_BASE_PATH/.env
-source $REPO_BASE_PATH/config
+
+# Read config from JSON file
+CONFIG=$(cat $REPO_BASE_PATH/config.json)
 
 # Check if network parameter is provided
 if [ "$1" != "mainnet" ] && [ "$1" != "testnet" ]; then
@@ -26,9 +28,9 @@ source $DEPLOYMENT_FILE
 
 # Set RPC_URL based on the network
 if [ "$NETWORK" == "mainnet" ]; then
-    RPC_URL=$MAINNET_RPC_URL
+    RPC_URL=$(echo $CONFIG | jq -r '.MAINNET_RPC_URL')
 else
-    RPC_URL=$TESTNET_RPC_URL
+    RPC_URL=$(echo $CONFIG | jq -r '.TESTNET_RPC_URL')
 fi
 
 # Check gas price
@@ -39,18 +41,21 @@ ADJUSTED_GAS_PRICE=$((GAS_PRICE * 120 / 100))  # Increase by 20%
 # Add gas price to transaction command
 TX_ARGS="--gas-price $ADJUSTED_GAS_PRICE"
 
+# Load swap tokens separately
+SWAP_TOKENS=$(echo $CONFIG | jq -r '.swapTokens | join(",")')
+
 # Deploy Competition through Factory
 echo "Deploying Competition through Factory on ${NETWORK}..."
 DEPLOY_RESULT=$(cast send --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
     $FACTORY_ADDRESS \
     "deploy(uint256,uint256,address,address,address,address[])" \
-    $startTimestamp \
-    $endTimestamp \
-    $router \
-    $stable0 \
-    $stable1 \
-    "[$swapTokens]" \
+    $(echo $CONFIG | jq -r '.startTimestamp') \
+    $(echo $CONFIG | jq -r '.endTimestamp') \
+    $(echo $CONFIG | jq -r '.router') \
+    $(echo $CONFIG | jq -r '.stable0') \
+    $(echo $CONFIG | jq -r '.stable1') \
+    "[${SWAP_TOKENS}]" \
     $TX_ARGS \
     --json)
 

@@ -9,7 +9,9 @@ REPO_BASE_PATH=$(
 )
 
 source $REPO_BASE_PATH/.env
-source $REPO_BASE_PATH/config
+
+# Read config from JSON file
+CONFIG=$(cat $REPO_BASE_PATH/config.json)
 
 # Check if network parameter is provided
 if [ "$1" != "mainnet" ] && [ "$1" != "testnet" ]; then
@@ -23,9 +25,9 @@ DEPLOYMENT_FILE="$REPO_BASE_PATH/deployment_${NETWORK}"
 
 # Set RPC_URL based on the network
 if [ "$NETWORK" == "mainnet" ]; then
-    RPC_URL=$MAINNET_RPC_URL
+    RPC_URL=$(echo $CONFIG | jq -r '.MAINNET_RPC_URL')
 else
-    RPC_URL=$TESTNET_RPC_URL
+    RPC_URL=$(echo $CONFIG | jq -r '.TESTNET_RPC_URL')
 fi
 
 echo "Adjusting gas price..."
@@ -40,7 +42,7 @@ echo "Deploying Factory contract on ${NETWORK}..."
 FACTORY_DEPLOY=$(forge create --rpc-url "$RPC_URL" \
     --private-key $PRIVATE_KEY \
     src/Factory.sol:Factory \
-    --constructor-args $owner \
+    --constructor-args $(echo $CONFIG | jq -r '.owner') \
     $TX_ARGS \
     --json)
 
@@ -85,4 +87,3 @@ else
     echo "Actual: $CONFIRMED_IMPLEMENTATION"
     exit 1
 fi
-
