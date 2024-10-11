@@ -24,7 +24,7 @@ import {Competition} from "../src/Competition.sol";
 ///      "mainnetRpcUrl": "https://..."
 ///    }
 /// 3. Run the script using Forge:
-///    `forge script script/Competition.s.sol:DeployCompetitionScript --broadcast`
+///    `forge script script/DeployCompetition.s.sol:DeployCompetitionScript --broadcast`
 /// 
 /// The script will:
 /// - Connect to the specified network (mainnet or testnet)

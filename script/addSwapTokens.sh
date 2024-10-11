@@ -9,7 +9,6 @@ REPO_BASE_PATH=$(
 )
 
 source $REPO_BASE_PATH/.env
-source $REPO_BASE_PATH/config
 
 # Check if network parameter is provided
 if [ "$1" != "mainnet" ] && [ "$1" != "testnet" ]; then
@@ -18,18 +17,12 @@ if [ "$1" != "mainnet" ] && [ "$1" != "testnet" ]; then
 fi
 
 NETWORK=$1
-NETWORK_UPPER=$(echo "$NETWORK" | tr '[:lower:]' '[:upper:]')
-DEPLOYMENT_FILE="$REPO_BASE_PATH/deployment_${NETWORK}"
 
-# Load addresses from deployment file
-source $DEPLOYMENT_FILE
-
-# Set RPC_URL based on the network
-if [ "$NETWORK" == "mainnet" ]; then
-    RPC_URL=$MAINNET_RPC_URL
-else
-    RPC_URL=$TESTNET_RPC_URL
-fi
+# Read config.json
+CONFIG_FILE="$REPO_BASE_PATH/config.json"
+COMPETITION_ADDRESS=$(jq -r '.competitionAddress' "$CONFIG_FILE")
+SWAP_TOKENS=$(jq -r '.swapTokens | join(",")' "$CONFIG_FILE")
+RPC_URL=$(jq -r "if .NETWORK == \"mainnet\" then .MAINNET_RPC_URL else .TESTNET_RPC_URL end" "$CONFIG_FILE")
 
 # Check gas price
 GAS_PRICE=$(cast gas-price --rpc-url $RPC_URL)
@@ -44,7 +37,7 @@ TX_RESULT=$(cast send --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
     $COMPETITION_ADDRESS \
     "addSwapTokens(address[])" \
-    "[$swapTokens]" \
+    "[$SWAP_TOKENS]" \
     $TX_ARGS \
     --json)
 

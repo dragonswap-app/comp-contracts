@@ -17,7 +17,7 @@ import {Competition} from "../src/Competition.sol";
 ///      "mainnetRpcUrl": "https://..."
 ///    }
 /// 3. Run the script using Forge:
-///    `forge script script/Factory.s.sol:DeployFactoryScript --broadcast`
+///    `forge script script/DeployFactory.s.sol:DeployFactoryScript --broadcast`
 /// 
 /// The script will:
 /// - Deploy the Factory contract

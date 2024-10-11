@@ -1,7 +1,9 @@
 {
-  "factoryAddress": "0x1CAbF81843EB7F9c1fD9F35a3Da6Db0d47ed6165",
-  "owner": "0x328f7689244Bd7D042c4aE9eC18077b6781D6Dd8",
-  "startTimestamp": 1728663316,
+  "factoryAddress": "",
+  "competitionAddress": "",
+  "owner": "",
+  
+  "startTimestamp": 1728669562,
   "endTimestamp": 1759500007,
   "router": "0x11DA6463D6Cb5a03411Dbf5ab6f6bc3997Ac7428",
   "stable0": "0x3894085Ef7Ff0f0aeDf52E2A2704928d1Ec074F1",
