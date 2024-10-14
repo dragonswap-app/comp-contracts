@@ -2,7 +2,10 @@
 src = "src"
 out = "out"
 libs = ["lib"]
-fs_permissions = [{ access = "read-write", path = "./deployment.json"}]
+fs_permissions = [
+    { access = "read-write", path = "./deployment.json" }, 
+    { access = "read", path = "./config.json" }
+]
 solc_version = '0.8.25'
 evm_version = 'shanghai'
 optimizer = true
