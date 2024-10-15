@@ -5,9 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {Factory} from "../src/Factory.sol";
 import {Competition} from "../src/Competition.sol";
 
-
 contract FactoryScript is Script {
-
     function setUp() public {}
 
     function run() public {
@@ -37,10 +35,14 @@ contract FactoryScript is Script {
 
         // Save deployment addresses to JSON file
         string memory jsonContent = string.concat(
-            '{\n',
-            '    "FACTORY_ADDRESS": "', vm.toString(address(factory)), '",\n',
-            '    "COMPETITION_IMPLEMENTATION_ADDRESS": "', vm.toString(address(competitionImplementation)), '"\n',
-            '}'
+            "{\n",
+            '    "FACTORY_ADDRESS": "',
+            vm.toString(address(factory)),
+            '",\n',
+            '    "COMPETITION_IMPLEMENTATION_ADDRESS": "',
+            vm.toString(address(competitionImplementation)),
+            '"\n',
+            "}"
         );
         string memory deploymentFile = "deployment.json";
         vm.writeFile(deploymentFile, jsonContent);
