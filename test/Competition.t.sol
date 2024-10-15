@@ -214,11 +214,11 @@ contract CompetitionTest is Test {
         usdtWseiPath[1] = WSEI;
 
         bytes memory swapData = abi.encodeWithSelector(
-        competition.swapExactTokensForTokens.selector,
-        usdtDepositAmount,
-        0,  // amountOutMin
-        usdtWseiPath,
-        address(competition)
+            competition.swapExactTokensForTokens.selector,
+            usdtDepositAmount,
+            0, // amountOutMin
+            usdtWseiPath,
+            address(competition)
         );
 
         uint256 deadline = block.timestamp + 1000;
@@ -239,11 +239,11 @@ contract CompetitionTest is Test {
         usdtWseiPath[1] = WSEI;
 
         bytes memory swapData = abi.encodeWithSelector(
-        competition.swapExactTokensForTokens.selector,
-        usdtDepositAmount,
-        0,  // amountOutMin
-        usdtWseiPath,
-        address(competition)
+            competition.swapExactTokensForTokens.selector,
+            usdtDepositAmount,
+            0, // amountOutMin
+            usdtWseiPath,
+            address(competition)
         );
 
         uint256 amountOut = performSwapWithPreviousBlockhash(swapData);
@@ -345,11 +345,7 @@ contract CompetitionTest is Test {
         path[1] = WSEI;
 
         bytes memory swapData = abi.encodeWithSelector(
-            competition.swapTokensForExactTokens.selector,
-            amountOut,
-            amountInMax,
-            path,
-            address(competition)
+            competition.swapTokensForExactTokens.selector, amountOut, amountInMax, path, address(competition)
         );
 
         uint256 deadline = block.timestamp + 1000;
@@ -377,11 +373,7 @@ contract CompetitionTest is Test {
         path[1] = WSEI;
 
         bytes memory swapData = abi.encodeWithSelector(
-            competition.swapTokensForExactTokens.selector,
-            amountOut,
-            amountInMax,
-            path,
-            address(competition)
+            competition.swapTokensForExactTokens.selector, amountOut, amountInMax, path, address(competition)
         );
 
         uint256 amountIn = performSwapWithPreviousBlockhash(swapData);
@@ -521,35 +513,35 @@ contract CompetitionTest is Test {
     }
 
     function test_multicallWithPreviousBlockhashExactInputSingle() public {
-         addWSEIAsSwapToken();
+        addWSEIAsSwapToken();
 
-         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
-         depositUSDC(usdcDepositAmount);
+        uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
+        depositUSDC(usdcDepositAmount);
 
-         uint256 amountIn = 1000000; // 1 USDC (6 decimals)
-         uint256 amountOutMinimum = 1; // Minimum amount of WSEI to receive
-         IV2SwapRouter.ExactInputSingleParams memory params = IV2SwapRouter.ExactInputSingleParams({
-             tokenIn: USDC,
-             tokenOut: WSEI,
-             fee: 3000, // 0.3% fee tier
-             recipient: address(competition),
-             amountIn: amountIn,
-             amountOutMinimum: amountOutMinimum,
-             sqrtPriceLimitX96: 0
-         });
+        uint256 amountIn = 1000000; // 1 USDC (6 decimals)
+        uint256 amountOutMinimum = 1; // Minimum amount of WSEI to receive
+        IV2SwapRouter.ExactInputSingleParams memory params = IV2SwapRouter.ExactInputSingleParams({
+            tokenIn: USDC,
+            tokenOut: WSEI,
+            fee: 3000, // 0.3% fee tier
+            recipient: address(competition),
+            amountIn: amountIn,
+            amountOutMinimum: amountOutMinimum,
+            sqrtPriceLimitX96: 0
+        });
 
-         bytes memory swapData = abi.encodeWithSelector(competition.exactInputSingle.selector, params);
+        bytes memory swapData = abi.encodeWithSelector(competition.exactInputSingle.selector, params);
 
-         uint256 amountOut = performSwapWithPreviousBlockhash(swapData);
+        uint256 amountOut = performSwapWithPreviousBlockhash(swapData);
 
-         assertGt(amountOut, 0, "Amount out should be greater than zero");
-         assertGe(amountOut, amountOutMinimum, "Amount out should be greater than or equal to minimum amount");
-         assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
-         assertEq(
-             competition.balances(address(this), USDC),
-             usdcDepositAmount - amountIn,
-             "USDC balance should be reduced by amount in"
-         );
+        assertGt(amountOut, 0, "Amount out should be greater than zero");
+        assertGe(amountOut, amountOutMinimum, "Amount out should be greater than or equal to minimum amount");
+        assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
+        assertEq(
+            competition.balances(address(this), USDC),
+            usdcDepositAmount - amountIn,
+            "USDC balance should be reduced by amount in"
+        );
     }
 
     function test_ExactInputSingleFailDueToInvalidRoute() public {
@@ -913,47 +905,47 @@ contract CompetitionTest is Test {
     }
 
     function test_multicallWithPreviousBlockhashExactOutputSingle() public {
-         // Add WSEI as a swap token
-         address[] memory newSwapTokens = new address[](1);
-         newSwapTokens[0] = WSEI;
-         competition.addSwapTokens(newSwapTokens);
- 
-         // Deposit USDC
-         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
-         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-         competition.deposit(true, usdcDepositAmount);
- 
-         // Set up swap parameters
-         uint256 amountOut = 1e15; // 0.001 WSEI (18 decimals)
-         uint256 amountInMaximum = 5000000; // Increased to 5 USDC (6 decimals)
- 
-         IV2SwapRouter.ExactOutputSingleParams memory params = IV2SwapRouter.ExactOutputSingleParams({
-             tokenIn: USDC,
-             tokenOut: WSEI,
-             fee: 3000, // 0.3% fee tier
-             recipient: address(competition),
-             amountOut: amountOut,
-             amountInMaximum: amountInMaximum,
-             sqrtPriceLimitX96: 0
-         });
- 
-         bytes[] memory data = new bytes[](1);
-         data[0] = abi.encodeWithSelector(competition.exactOutputSingle.selector, params);
- 
-         // Perform the multicall
-         bytes32 previousBlockhash = blockhash(block.number - 1);
-         bytes[] memory results = competition.multicall(previousBlockhash, data);
-         uint256 amountIn = abi.decode(results[0], (uint256));
- 
-         // Check that the swap was successful
-         assertGt(amountIn, 0, "Amount in should be greater than zero");
-         assertLe(amountIn, amountInMaximum, "Amount in should be less than or equal to maximum amount");
-         assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
-         assertEq(
-             competition.balances(address(this), USDC),
-             usdcDepositAmount - amountIn,
-             "USDC balance should be reduced by amount in"
-         );
+        // Add WSEI as a swap token
+        address[] memory newSwapTokens = new address[](1);
+        newSwapTokens[0] = WSEI;
+        competition.addSwapTokens(newSwapTokens);
+
+        // Deposit USDC
+        uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
+        IERC20(USDC).approve(address(competition), usdcDepositAmount);
+        competition.deposit(true, usdcDepositAmount);
+
+        // Set up swap parameters
+        uint256 amountOut = 1e15; // 0.001 WSEI (18 decimals)
+        uint256 amountInMaximum = 5000000; // Increased to 5 USDC (6 decimals)
+
+        IV2SwapRouter.ExactOutputSingleParams memory params = IV2SwapRouter.ExactOutputSingleParams({
+            tokenIn: USDC,
+            tokenOut: WSEI,
+            fee: 3000, // 0.3% fee tier
+            recipient: address(competition),
+            amountOut: amountOut,
+            amountInMaximum: amountInMaximum,
+            sqrtPriceLimitX96: 0
+        });
+
+        bytes[] memory data = new bytes[](1);
+        data[0] = abi.encodeWithSelector(competition.exactOutputSingle.selector, params);
+
+        // Perform the multicall
+        bytes32 previousBlockhash = blockhash(block.number - 1);
+        bytes[] memory results = competition.multicall(previousBlockhash, data);
+        uint256 amountIn = abi.decode(results[0], (uint256));
+
+        // Check that the swap was successful
+        assertGt(amountIn, 0, "Amount in should be greater than zero");
+        assertLe(amountIn, amountInMaximum, "Amount in should be less than or equal to maximum amount");
+        assertEq(competition.balances(address(this), WSEI), amountOut, "WSEI balance should match amount out");
+        assertEq(
+            competition.balances(address(this), USDC),
+            usdcDepositAmount - amountIn,
+            "USDC balance should be reduced by amount in"
+        );
     }
 
     function test_ExactOutputSingleFailDueToInvalidRoute() public {

@@ -35,17 +35,12 @@ contract CompetitionScript is Script {
         // Deploy Competition through Factory
         address factoryAddress = readFactoryAddress();
         Factory factory = Factory(factoryAddress);
-        
+
         // Capture logs
         vm.recordLogs();
 
         factory.deploy(
-            config.startTimestamp,
-            config.endTimestamp,
-            config.router,
-            config.stable0,
-            config.stable1,
-            config.swapTokens
+            config.startTimestamp, config.endTimestamp, config.router, config.stable0, config.stable1, config.swapTokens
         );
 
         vm.stopBroadcast();
@@ -56,7 +51,7 @@ contract CompetitionScript is Script {
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
-        for (uint i = 0; i < logs.length; i++) {
+        for (uint256 i = 0; i < logs.length; i++) {
             if (logs[i].topics[0] == deployedEventSignature) {
                 competitionAddress = address(uint160(uint256(logs[i].topics[1])));
                 break;
@@ -108,47 +103,53 @@ contract CompetitionScript is Script {
     function writeCompetitionDeploymentAddress(address competitionAddress) internal {
         string memory deploymentFile = "deployment.json";
         string memory jsonContent = vm.readFile(deploymentFile);
-        
+
         // Parse existing JSON content
         bytes memory factoryAddressBytes = vm.parseJson(jsonContent, ".FACTORY_ADDRESS");
         bytes memory implementationAddressBytes = vm.parseJson(jsonContent, ".COMPETITION_IMPLEMENTATION_ADDRESS");
         bytes memory competitionAddressesBytes = vm.parseJson(jsonContent, ".COMPETITION_ADDRESSES");
-    
+
         // Decode existing competition addresses
         address[] memory existingAddresses;
         if (competitionAddressesBytes.length > 0) {
             existingAddresses = abi.decode(competitionAddressesBytes, (address[]));
         }
-    
+
         // Create new array with additional address
         address[] memory newAddresses = new address[](existingAddresses.length + 1);
-        for (uint i = 0; i < existingAddresses.length; i++) {
+        for (uint256 i = 0; i < existingAddresses.length; i++) {
             newAddresses[i] = existingAddresses[i];
         }
         newAddresses[existingAddresses.length] = competitionAddress;
-    
+
         // Create updated JSON content
         string memory updatedJsonContent = string.concat(
-            '{\n',
-            '    "FACTORY_ADDRESS": "', vm.toString(abi.decode(factoryAddressBytes, (address))), '",\n',
-            '    "COMPETITION_IMPLEMENTATION_ADDRESS": "', vm.toString(abi.decode(implementationAddressBytes, (address))), '",\n',
-            '    "COMPETITION_ADDRESSES": ', addressArrayToJsonString(newAddresses), '\n',
-            '}'
+            "{\n",
+            '    "FACTORY_ADDRESS": "',
+            vm.toString(abi.decode(factoryAddressBytes, (address))),
+            '",\n',
+            '    "COMPETITION_IMPLEMENTATION_ADDRESS": "',
+            vm.toString(abi.decode(implementationAddressBytes, (address))),
+            '",\n',
+            '    "COMPETITION_ADDRESSES": ',
+            addressArrayToJsonString(newAddresses),
+            "\n",
+            "}"
         );
-    
+
         // Write updated JSON content back to the file
         vm.writeFile(deploymentFile, updatedJsonContent);
-    
+
         console.log("Added new Competition address:", competitionAddress);
     }
-    
+
     function addressArrayToJsonString(address[] memory addresses) internal pure returns (string memory) {
         if (addresses.length == 0) {
             return "[]";
         }
-    
+
         string memory result = "[\n        ";
-        for (uint i = 0; i < addresses.length; i++) {
+        for (uint256 i = 0; i < addresses.length; i++) {
             if (i > 0) {
                 result = string.concat(result, ",\n        ");
             }
