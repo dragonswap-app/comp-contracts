@@ -26,10 +26,6 @@ contract Competition is
     ISwapRouter02Minimal public router;
 
     /// @inheritdoc ICompetition
-    address public stable0;
-    /// @inheritdoc ICompetition
-    address public stable1;
-    /// @inheritdoc ICompetition
     uint256 public startTimestamp;
     /// @inheritdoc ICompetition
     uint256 public endTimestamp;
@@ -37,6 +33,7 @@ contract Competition is
     /// @inheritdoc ICompetition
     address[] public swapTokens;
 
+    mapping(address stable => bool isAllowed) public stableCoins;
     /// @inheritdoc ICompetition
     mapping(address account => bool exited) public isOut;
     /// @inheritdoc ICompetition
@@ -68,8 +65,7 @@ contract Competition is
         uint256 startTimestamp_,
         uint256 endTimestamp_,
         address router_,
-        address stable0_,
-        address stable1_,
+        address[] memory stableCoins_,
         address[] memory swapTokens_
     ) external initializer {
         // Initialize OwnableUpgradeable
@@ -81,45 +77,37 @@ contract Competition is
 
         // Ensure code is present at the specified addresses.
         Utils._isContract(router_);
-        Utils._isContract(stable0_);
-        Utils._isContract(stable1_);
 
         // Store values.
         router = ISwapRouter02Minimal(router_);
         startTimestamp = startTimestamp_;
         endTimestamp = endTimestamp_;
-        stable0 = stable0_;
-        stable1 = stable1_;
 
         // This helps us avoid zero value being a swapToken id.
         swapTokens.push(address(0xdead));
 
-        // Manually add stables to the swapTokens structure.
+        // Add stables to the swapTokens structure and whitelist them for deposit.
         // They're added in order to simplify the swap route check.
-        swapTokens.push(stable0_);
-        swapTokenIds[stable0_] = 1;
-        emit SwapTokenAdded(stable0_);
-        swapTokens.push(stable1_);
-        swapTokenIds[stable1_] = 2;
-        emit SwapTokenAdded(stable1_);
+        _addSwapTokens(stableCoins_, true);
 
         // Add swap tokens.
-        _addSwapTokens(swapTokens_);
+        _addSwapTokens(swapTokens_, false);
     }
 
     /// @inheritdoc ICompetition
-    function deposit(bool _stable0, uint256 amount) external notOut {
+    function deposit(address stableCoin, uint256 amount) external notOut {
         // Ensure competition is in progress (users can deposit before beginning).
         if (block.timestamp > endTimestamp) revert Ended();
         // Ensure minimum deposit is crossed.
         if (amount < MINIMAL_DEPOSIT) revert InsufficientAmount();
-        // Determine which stable coin is being deposited.
-        address stable = _stable0 ? stable0 : stable1;
-        IERC20(stable).safeTransferFrom(msg.sender, address(this), amount);
+        // Ensure stable coin is approved.
+        if (!stableCoins[stableCoin]) revert InvalidToken();
+        // Make the deposit.
+        IERC20(stableCoin).safeTransferFrom(msg.sender, address(this), amount);
         // Note the balance change.
-        balances[msg.sender][stable] += amount;
+        balances[msg.sender][stableCoin] += amount;
         // Emit event.
-        emit NewDeposit(msg.sender, stable, amount);
+        emit NewDeposit(msg.sender, stableCoin, amount);
     }
 
     /// @inheritdoc ICompetition
@@ -299,8 +287,8 @@ contract Competition is
     }
 
     /// @inheritdoc ICompetition
-    function addSwapTokens(address[] memory swapTokens_) external onlyOwner {
-        _addSwapTokens(swapTokens_);
+    function addSwapTokens(address[] memory swapTokens_, bool stableCoins_) external onlyOwner {
+        _addSwapTokens(swapTokens_, stableCoins_);
     }
 
     /// @inheritdoc ICompetition
@@ -309,7 +297,7 @@ contract Competition is
         return swapTokenIds[token] > 0;
     }
 
-    function _addSwapTokens(address[] memory _swapTokens) private {
+    function _addSwapTokens(address[] memory _swapTokens, bool _stableCoins) private {
         // Gas opt
         uint256 _length = _swapTokens.length;
         uint256 length = swapTokens.length;
@@ -317,6 +305,7 @@ contract Competition is
             address _token = _swapTokens[i];
             // Ensure there is code at the specified address
             Utils._isContract(_token);
+            if (_stableCoins)   stableCoins[_token] = true;
             // Add token if it is not already present
             if (!isSwapToken(_token)) {
                 swapTokenIds[_token] = length++;

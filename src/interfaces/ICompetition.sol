@@ -51,6 +51,7 @@ interface ICompetition {
     error InvalidTimestamps();
     /// @dev Invalid path length in both case of an array and byte-string.
     error InvalidPathLength();
+    error InvalidToken();
 
     /**
      * @dev Competition contract initialization function.
@@ -58,8 +59,7 @@ interface ICompetition {
      * @param startTimestamp_ is the timestamp at which the competition starts.
      * @param endTimestamp_ is the timestamp at which the competition ends.
      * @param router_ is the SwapRouter02 aggregating the swaps.
-     * @param stable0_ is the first acceptable stable coin for deposit.
-     * @param stable1_ is the second acceptable stable coin for deposit.
+     * @param stableCoins_ is an array of stable coins which are acceptable for deposit.
      * @param swapTokens_ is the initial set of swapTokens to be supported.
      */
     function initialize(
@@ -67,26 +67,26 @@ interface ICompetition {
         uint256 startTimestamp_,
         uint256 endTimestamp_,
         address router_,
-        address stable0_,
-        address stable1_,
+        address[] memory stableCoins_,
         address[] memory swapTokens_
     ) external;
 
     /**
-     * @param _stable0 if true means stable0 is being deposited else stable1
+     * @param stableCoin is an address of a stable coin to deposit.
      */
-    function deposit(bool _stable0, uint256 amount) external;
+    function deposit(address stableCoin, uint256 amount) external;
 
     /**
      * @dev Function to exit the competition
      * After exit, all tokens need to be withdrawn in order to re-join.
      */
     function exit() external;
+
     /**
      * @dev Function to add a new set of swapTokens to the competition.
      * @param swapTokens_ is an array of swapTokens.
      */
-    function addSwapTokens(address[] memory swapTokens_) external;
+    function addSwapTokens(address[] memory swapTokens_, bool stableCoins_) external;
 
     /**
      * @dev Router of SwapRouter02 type.
@@ -94,14 +94,9 @@ interface ICompetition {
     function router() external view returns (ISwapRouter02Minimal);
 
     /**
-     * @dev Stable coin which can be directly deposited.
+     * @dev See if a stable coin can be deposited.
      */
-    function stable0() external view returns (address);
-
-    /**
-     * @dev Stable coin which can be directly deposited.
-     */
-    function stable1() external view returns (address);
+    function stableCoins(address stableCoin) external view returns (bool);
 
     /**
      * @dev Timestamp at which the competition begins.
