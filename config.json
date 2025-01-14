@@ -2,10 +2,6 @@
   "startTimestamp": 0,
   "endTimestamp": 0,
   "router": "",
-  "stable0": "",
-  "stable1": "",
-  "swapTokens": [
-    "",
-    ""
-  ]
+  "stableCoins": [],
+  "swapTokens": []
 }

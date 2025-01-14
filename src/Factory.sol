@@ -42,8 +42,7 @@ contract Factory is Ownable2Step {
         uint256 _startTimestamp,
         uint256 _endTimestamp,
         address _router,
-        address _stable0,
-        address _stable1,
+        address[] memory _stableCoins,
         address[] memory _swapTokens
     ) external onlyOwner {
         address impl = implementation;
@@ -73,7 +72,7 @@ contract Factory is Ownable2Step {
 
         // Initialize the instance.
         ICompetition(instance).initialize(
-            owner(), _startTimestamp, _endTimestamp, _router, _stable0, _stable1, _swapTokens
+            owner(), _startTimestamp, _endTimestamp, _router, _stableCoins, _swapTokens
         );
         // Emit event.
         emit Deployed(instance, impl);

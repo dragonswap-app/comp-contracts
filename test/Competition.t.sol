@@ -16,6 +16,7 @@ contract CompetitionTest is Test {
     Competition public competition;
     Factory public factory;
     address[] public swapTokens;
+    address[] public stableCoins;
 
     ISwapRouter02Minimal public constant DS_ROUTER = ISwapRouter02Minimal(0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45);
     // @dev USDC and USDT are both native sei tokens which means they include precompile interaction which breaks the tests
@@ -33,8 +34,11 @@ contract CompetitionTest is Test {
 
         factory.setImplementation(address(competition));
 
+        stableCoins.push(USDC);
+        stableCoins.push(USDT);
+
         vm.recordLogs();
-        factory.deploy(block.timestamp, block.timestamp + 1 days, address(DS_ROUTER), USDC, USDT, swapTokens);
+        factory.deploy(block.timestamp, block.timestamp + 1 days, address(DS_ROUTER), stableCoins, swapTokens);
         Vm.Log[] memory entries = vm.getRecordedLogs();
 
         for (uint256 i = 0; i < entries.length; i++) {
@@ -63,17 +67,17 @@ contract CompetitionTest is Test {
     function addWSEIAsSwapToken() internal {
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
     }
 
     function depositUSDC(uint256 amount) internal {
         IERC20(USDC).approve(address(competition), amount);
-        competition.deposit(true, amount);
+        competition.deposit(USDC, amount);
     }
 
     function depositUSDT(uint256 amount) internal {
         IERC20(USDT).safeIncreaseAllowance(address(competition), amount);
-        competition.deposit(false, amount);
+        competition.deposit(USDT, amount);
     }
 
     function performSwap(bytes memory swapData) internal returns (uint256) {
@@ -101,7 +105,7 @@ contract CompetitionTest is Test {
     function test_addNewSwapToken() public {
         assertEq(competition.isSwapToken(ERC20), false);
         swapTokens.push(ERC20);
-        competition.addSwapTokens(swapTokens);
+        competition.addSwapTokens(swapTokens, false);
         assertEq(competition.isSwapToken(ERC20), true);
         swapTokens.pop();
     }
@@ -109,7 +113,7 @@ contract CompetitionTest is Test {
     function test_addNonContractToken() public {
         swapTokens.push(address(1));
         vm.expectRevert(Utils.NotAContract.selector);
-        competition.addSwapTokens(swapTokens);
+        competition.addSwapTokens(swapTokens, false);
         swapTokens.pop();
     }
 
@@ -132,7 +136,7 @@ contract CompetitionTest is Test {
         uint256 usdcDepositAmount = 9000000; // 9 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
         vm.expectRevert(ICompetition.InsufficientAmount.selector);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
     }
 
     function test_exit() public {
@@ -614,12 +618,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up swap parameters
         uint256 amountIn = 1000000; // 1 USDC (6 decimals)
@@ -655,12 +659,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up swap parameters
         uint256 amountIn = 1000000; // 1 USDC (6 decimals)
@@ -697,12 +701,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up swap parameters
         uint256 amountIn = 1000000; // 1 USDC (6 decimals)
@@ -739,7 +743,7 @@ contract CompetitionTest is Test {
         // Deposit USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up swap parameters with an invalid route (USDC to WSEI, where WSEI is not a swap token)
         IV2SwapRouter.ExactInputParams memory params = IV2SwapRouter.ExactInputParams({
@@ -758,12 +762,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up swap parameters with an amount greater than the deposited balance
         IV2SwapRouter.ExactInputParams memory params = IV2SwapRouter.ExactInputParams({
@@ -782,12 +786,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up swap parameters
         uint256 amountOut = 1e15; // 0.001 WSEI (18 decimals)
@@ -821,12 +825,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up swap parameters
         uint256 amountOut = 1e15; // 0.001 WSEI (18 decimals)
@@ -864,12 +868,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up swap parameters
         uint256 amountOut = 1e15; // 0.001 WSEI (18 decimals)
@@ -908,12 +912,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up swap parameters
         uint256 amountOut = 1e15; // 0.001 WSEI (18 decimals)
@@ -952,7 +956,7 @@ contract CompetitionTest is Test {
         // Deposit USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up swap parameters with an invalid route (USDC to WSEI, where WSEI is not a swap token)
         uint256 amountOut = 1e18; // 1 WSEI (18 decimals)
@@ -977,12 +981,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit a small amount of USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up swap parameters with an amount larger than the deposited balance
         uint256 amountOut = 1e16; // 0.01 WSEI (18 decimals)
@@ -1007,12 +1011,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit USDC
         uint256 usdcDepositAmount = 100000000; // 100 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up ExactOutput swap parameters for USDC to WSEI
         uint256 amountOut = 1e14; // 0.0001 WSEI (18 decimals)
@@ -1054,12 +1058,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit USDC
         uint256 usdcDepositAmount = 100000000; // 100 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up ExactOutput swap parameters for USDC to WSEI
         uint256 amountOut = 1e14; // 0.0001 WSEI (18 decimals)
@@ -1096,12 +1100,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit USDC
         uint256 usdcDepositAmount = 100000000; // 100 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up ExactOutput swap parameters for USDC to WSEI
         uint256 amountOut = 1e14; // 0.0001 WSEI (18 decimals)
@@ -1139,12 +1143,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit USDC
         uint256 usdcDepositAmount = 100000000; // 100 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up ExactOutput swap parameters for USDC to WSEI
         uint256 amountOut = 1e14; // 0.0001 WSEI (18 decimals)
@@ -1182,7 +1186,7 @@ contract CompetitionTest is Test {
         // Deposit USDC
         uint256 usdcDepositAmount = 10000000; // 10 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up swap parameters with an invalid route (USDC to WSEI, where WSEI is not a swap token)
         uint256 amountOut = 1e18; // 1 WSEI (18 decimals)
@@ -1204,12 +1208,12 @@ contract CompetitionTest is Test {
         // Add WSEI as a swap token
         address[] memory newSwapTokens = new address[](1);
         newSwapTokens[0] = WSEI;
-        competition.addSwapTokens(newSwapTokens);
+        competition.addSwapTokens(newSwapTokens, false);
 
         // Deposit a small amount of USDC
         uint256 usdcDepositAmount = 10000000; // 1 USDC (6 decimals)
         IERC20(USDC).approve(address(competition), usdcDepositAmount);
-        competition.deposit(true, usdcDepositAmount);
+        competition.deposit(USDC, usdcDepositAmount);
 
         // Set up swap parameters with an amount larger than the deposited balance
         uint256 amountOut = 1e16; // 0.01 WSEI (18 decimals)

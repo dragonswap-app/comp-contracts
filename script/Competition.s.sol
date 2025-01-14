@@ -11,8 +11,7 @@ contract CompetitionScript is Script {
         uint256 startTimestamp;
         uint256 endTimestamp;
         address router;
-        address stable0;
-        address stable1;
+        address[] stableCoins;
         address[] swapTokens;
     }
 
@@ -40,7 +39,7 @@ contract CompetitionScript is Script {
         vm.recordLogs();
 
         factory.deploy(
-            config.startTimestamp, config.endTimestamp, config.router, config.stable0, config.stable1, config.swapTokens
+            config.startTimestamp, config.endTimestamp, config.router, config.stableCoins, config.swapTokens
         );
 
         vm.stopBroadcast();
@@ -77,8 +76,7 @@ contract CompetitionScript is Script {
         bytes memory startTimestampBytes = vm.parseJson(jsonConfig, ".startTimestamp");
         bytes memory endTimestampBytes = vm.parseJson(jsonConfig, ".endTimestamp");
         bytes memory routerBytes = vm.parseJson(jsonConfig, ".router");
-        bytes memory stable0Bytes = vm.parseJson(jsonConfig, ".stable0");
-        bytes memory stable1Bytes = vm.parseJson(jsonConfig, ".stable1");
+        bytes memory stableCoinsBytes = vm.parseJson(jsonConfig, ".stableCoins");
         bytes memory swapTokensBytes = vm.parseJson(jsonConfig, ".swapTokens");
 
         address[] memory swapTokens = abi.decode(swapTokensBytes, (address[]));
@@ -87,8 +85,7 @@ contract CompetitionScript is Script {
             startTimestamp: abi.decode(startTimestampBytes, (uint256)),
             endTimestamp: abi.decode(endTimestampBytes, (uint256)),
             router: abi.decode(routerBytes, (address)),
-            stable0: abi.decode(stable0Bytes, (address)),
-            stable1: abi.decode(stable1Bytes, (address)),
+            stableCoins: abi.decode(stableCoinsBytes, (address[])),
             swapTokens: swapTokens
         });
     }
