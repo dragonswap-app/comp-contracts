@@ -33,6 +33,7 @@ contract Competition is
     /// @inheritdoc ICompetition
     address[] public swapTokens;
 
+    /// @inheritdoc ICompetition
     mapping(address stable => bool isAllowed) public stableCoins;
     /// @inheritdoc ICompetition
     mapping(address account => bool exited) public isOut;
@@ -101,7 +102,7 @@ contract Competition is
         // Ensure minimum deposit is crossed.
         if (amount < MINIMAL_DEPOSIT) revert InsufficientAmount();
         // Ensure stable coin is approved.
-        if (!stableCoins[stableCoin]) revert InvalidToken();
+        if (!stableCoins[stableCoin]) revert InvalidDepositToken();
         // Make the deposit.
         IERC20(stableCoin).safeTransferFrom(msg.sender, address(this), amount);
         // Note the balance change.
@@ -117,7 +118,7 @@ contract Competition is
         bool madeWithdrawal;
         // Flag for leftover existence (occurs when a token is stuck).
         bool leftoverExists;
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             // Retrieve values.
             address token = swapTokens[i];
             uint256 balance = balances[msg.sender][token];
@@ -297,6 +298,9 @@ contract Competition is
         return swapTokenIds[token] > 0;
     }
 
+    /**
+     * @dev Function to whitelist swap tokens and stablecoins.
+     */
     function _addSwapTokens(address[] memory _swapTokens, bool _stableCoins) private {
         // Gas opt
         uint256 _length = _swapTokens.length;
@@ -305,7 +309,10 @@ contract Competition is
             address _token = _swapTokens[i];
             // Ensure there is code at the specified address
             Utils._isContract(_token);
-            if (_stableCoins)   stableCoins[_token] = true;
+            if (_stableCoins) {
+                stableCoins[_token] = true;
+                emit StableCoinAdded(_token);
+            }
             // Add token if it is not already present
             if (!isSwapToken(_token)) {
                 swapTokenIds[_token] = length++;
