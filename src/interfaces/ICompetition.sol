@@ -9,9 +9,9 @@ interface ICompetition {
         V2
     }
 
-    event SwapTokenAdded(address token);
-    event SwapTokenRemoved(address token);
-    event NewDeposit(address indexed account, address indexed stable, uint256 amount);
+    event SwapTokenAdded(address indexed token);
+    event StableCoinAdded(address indexed stableCoin);
+    event NewDeposit(address indexed account, address indexed stableCoin, uint256 amount);
     event Exit(address indexed account);
     /**
      * @dev Event occurring on every new swap being made.
@@ -51,7 +51,8 @@ interface ICompetition {
     error InvalidTimestamps();
     /// @dev Invalid path length in both case of an array and byte-string.
     error InvalidPathLength();
-    error InvalidToken();
+    /// @dev Tried to deposit a stable coin which is not whitelisted.
+    error InvalidDepositToken();
 
     /**
      * @dev Competition contract initialization function.
