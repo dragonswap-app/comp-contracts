@@ -11,12 +11,15 @@ import {Multicall} from "./base/Multicall.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable@5.0.2/access/Ownable2StepUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from
     "@openzeppelin/contracts-upgradeable@5.0.2/utils/ReentrancyGuardUpgradeable.sol";
+import {PausableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable@5.0.2/utils/PausableUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils/SafeERC20.sol";
 
 contract Competition is
     ICompetition,
     ISwapRouter02Minimal,
     ReentrancyGuardUpgradeable,
+    PausableUpgradeable,
     Ownable2StepUpgradeable,
     Multicall
 {
@@ -96,7 +99,17 @@ contract Competition is
     }
 
     /// @inheritdoc ICompetition
-    function deposit(address stableCoin, uint256 amount) external notOut {
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /// @inheritdoc ICompetition
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    /// @inheritdoc ICompetition
+    function deposit(address stableCoin, uint256 amount) external notOut whenNotPaused {
         // Ensure competition is in progress (users can deposit before beginning).
         if (block.timestamp > endTimestamp) revert Ended();
         // Ensure minimum deposit is crossed.
@@ -152,6 +165,7 @@ contract Competition is
         external
         onceOn
         notOut
+        whenNotPaused
         nonReentrant
         returns (uint256 amountOut)
     {
@@ -174,6 +188,7 @@ contract Competition is
         external
         onceOn
         notOut
+        whenNotPaused
         nonReentrant
         returns (uint256 amountIn)
     {
@@ -198,6 +213,7 @@ contract Competition is
         external
         onceOn
         notOut
+        whenNotPaused
         nonReentrant
         returns (uint256 amountOut)
     {
@@ -220,6 +236,7 @@ contract Competition is
         external
         onceOn
         notOut
+        whenNotPaused
         nonReentrant
         returns (uint256 amountOut)
     {
@@ -244,6 +261,7 @@ contract Competition is
         external
         onceOn
         notOut
+        whenNotPaused
         nonReentrant
         returns (uint256 amountIn)
     {
@@ -267,6 +285,7 @@ contract Competition is
         external
         onceOn
         notOut
+        whenNotPaused
         nonReentrant
         returns (uint256 amountIn)
     {
