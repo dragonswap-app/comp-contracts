@@ -73,6 +73,16 @@ interface ICompetition {
     ) external;
 
     /**
+     * @dev Function to pause the contract.
+     */
+    function pause() external;
+
+    /**
+     * @dev Function to unpause the contract.
+     */
+    function unpause() external;
+
+    /**
      * @param stableCoin is an address of a stable coin to deposit.
      */
     function deposit(address stableCoin, uint256 amount) external;
