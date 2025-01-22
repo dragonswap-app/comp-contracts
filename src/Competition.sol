@@ -14,6 +14,7 @@ import {ReentrancyGuardUpgradeable} from
 import {PausableUpgradeable} from
     "@openzeppelin/contracts-upgradeable@5.0.2/utils/PausableUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils/SafeERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts@5.0.2/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract Competition is
     ICompetition,
@@ -112,8 +113,8 @@ contract Competition is
     function deposit(address stableCoin, uint256 amount) external notOut whenNotPaused {
         // Ensure competition is in progress (users can deposit before beginning).
         if (block.timestamp > endTimestamp) revert Ended();
-        // Ensure minimum deposit is crossed.
-        if (amount < MINIMAL_DEPOSIT) revert InsufficientAmount();
+        // Ensure minimum deposit is reached (10 stablecoins).
+        if (amount < 10 * 10 ** IERC20Metadata(stableCoin).decimals()) revert InsufficientAmount();
         // Ensure stable coin is approved.
         if (!stableCoins[stableCoin]) revert InvalidDepositToken();
         // Make the deposit.

@@ -24,7 +24,7 @@ contract CompetitionTest is Test {
     address public constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
     address public constant ERC20 = 0xA700b4eB416Be35b2911fd5Dee80678ff64fF6C9;
     address payable public constant WSEI = payable(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-    string public constant URL = "wss://ethereum-rpc.publicnode.com";
+    string public constant URL = "https://eth.drpc.org";
 
     function setUp() public {
         vm.createSelectFork(URL);
