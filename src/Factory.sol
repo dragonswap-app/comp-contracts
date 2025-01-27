@@ -71,9 +71,7 @@ contract Factory is Ownable2Step {
         deployments.push(instance);
 
         // Initialize the instance.
-        ICompetition(instance).initialize(
-            owner(), _startTimestamp, _endTimestamp, _router, _stableCoins, _swapTokens
-        );
+        ICompetition(instance).initialize(owner(), _startTimestamp, _endTimestamp, _router, _stableCoins, _swapTokens);
         // Emit event.
         emit Deployed(instance, impl);
     }
@@ -81,19 +79,18 @@ contract Factory is Ownable2Step {
     /**
      * @dev Function to retrieve total number of deployments made by this factory.
      */
-    function noOfDeployments() public view returns (uint256) {
-        return deployments.length;
+    function noOfDeployments() public view returns (uint256 count) {
+        count = deployments.length;
     }
 
     /**
      * @dev Function to retrieve the address of the latest deployment made by this factory.
      * @return The latest deployment address.
      */
-    function getLatestDeployment() external view returns (address) {
+    function getLatestDeployment() external view returns (address latestDeployment) {
         uint256 _noOfDeployments = noOfDeployments();
-        if (_noOfDeployments > 0) return deployments[_noOfDeployments - 1];
+        if (_noOfDeployments > 0) latestDeployment = deployments[_noOfDeployments - 1];
         // Return zero address if no deployments were made.
-        return address(0);
     }
 
     /**
