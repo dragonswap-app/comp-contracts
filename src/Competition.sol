@@ -11,8 +11,7 @@ import {Multicall} from "./base/Multicall.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable@5.0.2/access/Ownable2StepUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from
     "@openzeppelin/contracts-upgradeable@5.0.2/utils/ReentrancyGuardUpgradeable.sol";
-import {PausableUpgradeable} from
-    "@openzeppelin/contracts-upgradeable@5.0.2/utils/PausableUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable@5.0.2/utils/PausableUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts@5.0.2/token/ERC20/extensions/IERC20Metadata.sol";
 
@@ -46,9 +45,6 @@ contract Competition is
     /// @inheritdoc ICompetition
     mapping(address account => mapping(address token => uint256 balance)) public balances;
 
-    /// @inheritdoc ICompetition
-    uint256 public constant MINIMAL_DEPOSIT = 10e6;
-
     modifier onceOn() {
         _isOnCheck();
         _;
@@ -70,8 +66,8 @@ contract Competition is
         uint256 startTimestamp_,
         uint256 endTimestamp_,
         address router_,
-        address[] memory stableCoins_,
-        address[] memory swapTokens_
+        address[] calldata stableCoins_,
+        address[] calldata swapTokens_
     ) external initializer {
         // Initialize OwnableUpgradeable
         __Ownable_init(owner_);
@@ -308,20 +304,20 @@ contract Competition is
     }
 
     /// @inheritdoc ICompetition
-    function addSwapTokens(address[] memory swapTokens_, bool stableCoins_) external onlyOwner {
+    function addSwapTokens(address[] calldata swapTokens_, bool stableCoins_) external onlyOwner {
         _addSwapTokens(swapTokens_, stableCoins_);
     }
 
     /// @inheritdoc ICompetition
-    function isSwapToken(address token) public view returns (bool) {
+    function isSwapToken(address token) public view returns (bool isToken) {
         // Token having an id implies that it is added to the swapTokens array.
-        return swapTokenIds[token] > 0;
+        isToken = swapTokenIds[token] > 0;
     }
 
     /**
      * @dev Function to whitelist swap tokens and stablecoins.
      */
-    function _addSwapTokens(address[] memory _swapTokens, bool _stableCoins) private {
+    function _addSwapTokens(address[] calldata _swapTokens, bool _stableCoins) private {
         // Gas opt
         uint256 _length = _swapTokens.length;
         uint256 length = swapTokens.length;
@@ -338,6 +334,8 @@ contract Competition is
                 swapTokenIds[_token] = length++;
                 swapTokens.push(_token);
                 emit SwapTokenAdded(_token);
+            } else {
+                revert AlreadyAdded(_token);
             }
         }
     }
@@ -361,6 +359,7 @@ contract Competition is
         if (!isSwapToken(_tokenIn) || !isSwapToken(_tokenOut)) {
             revert InvalidRoute();
         }
+        if (_tokenIn == _tokenOut) revert CannotSwapSame();
         // Ensure that the competition participant has sufficient amount of tokens.
         if (balances[msg.sender][_tokenIn] < _amountIn) revert InsufficientBalance();
         // Approve specified token amount to the router.

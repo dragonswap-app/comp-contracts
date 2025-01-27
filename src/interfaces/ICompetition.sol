@@ -53,6 +53,10 @@ interface ICompetition {
     error InvalidPathLength();
     /// @dev Tried to deposit a stable coin which is not whitelisted.
     error InvalidDepositToken();
+    /// @dev Means a token has already been added as a swap token.
+    error AlreadyAdded(address token);
+    /// @dev tokeIn and tokenOut cannot be the same.
+    error CannotSwapSame();
 
     /**
      * @dev Competition contract initialization function.
@@ -145,12 +149,6 @@ interface ICompetition {
      * @param token is the token whos balance is checked on the user's account.
      */
     function balances(address account, address token) external view returns (uint256);
-
-    /**
-     * @dev Constant which represent the minimal value that can be deposited.
-     * This exists in order to introduce a safe event indexing criteria for the graph.
-     */
-    function MINIMAL_DEPOSIT() external pure returns (uint256);
 
     /**
      * @dev Function to determine if an address represents a swap token.
