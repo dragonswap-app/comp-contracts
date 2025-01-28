@@ -104,6 +104,11 @@ interface ICompetition {
     function addSwapTokens(address[] memory swapTokens_, bool stableCoins_) external;
 
     /**
+     * @dev Function to change the end timestamp of the competition instance.
+     */
+    function updateEndTimestamp(uint256 timestamp) external;
+
+    /**
      * @dev Router of SwapRouter02 type.
      */
     function router() external view returns (ISwapRouter02Minimal);

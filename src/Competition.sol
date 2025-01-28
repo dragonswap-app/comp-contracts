@@ -309,6 +309,12 @@ contract Competition is
     }
 
     /// @inheritdoc ICompetition
+    function updateEndTimestamp(uint256 timestamp) external onlyOwner {
+        if (block.timestamp > endTimestamp || timestamp <= block.timestamp) revert();
+        endTimestamp = timestamp;
+    }
+
+    /// @inheritdoc ICompetition
     function isSwapToken(address token) public view returns (bool isToken) {
         // Token having an id implies that it is added to the swapTokens array.
         isToken = swapTokenIds[token] > 0;
