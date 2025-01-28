@@ -85,7 +85,7 @@ contract Factory is Ownable2Step {
 
     /**
      * @dev Function to retrieve the address of the latest deployment made by this factory.
-     * @return The latest deployment address.
+     * @return latestDeployment is the latest deployment address.
      */
     function getLatestDeployment() external view returns (address latestDeployment) {
         uint256 _noOfDeployments = noOfDeployments();
